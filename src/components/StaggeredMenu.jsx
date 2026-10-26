@@ -11,7 +11,7 @@ export const StaggeredMenu = ({
   displaySocials = true,
   displayItemNumbering = true,
   className,
-  logoUrl = "/assets/artstronomy-logo.png",
+  logoUrl = "/assets/artstronomy-wordmark.svg",
   menuButtonColor = "#fffef6",
   openMenuButtonColor = "#fffef6",
   accentColor = "#ffd400",
@@ -268,8 +268,7 @@ export const StaggeredMenu = ({
 
       <header ref={headerRef} className="staggered-menu-header" aria-label="Main navigation header">
         <a className="sm-logo" href="#top" aria-label="ARTStronomy home" onClick={closeMenu}>
-          <img src={logoUrl} alt="ARTStronomy Hoshi mascot" className="sm-logo-img" draggable={false} width={52} height={52} />
-          <span>ARTSTRONOMY</span>
+          <img src={logoUrl} alt="ARTStronomy" className="sm-logo-img" draggable={false} width={220} height={53} />
         </a>
         <button
           ref={toggleBtnRef}

@@ -1,4 +1,4 @@
-.seated-hub{position:absolute;inset:0;isolation:isolate;background:#0b1220;color:#ffd400;font-family:"Inter Variable",sans-serif;overflow:hidden}
+.seated-hub{position:absolute;inset:0;isolation:isolate;background:#0b1220;color:#ffd400;font-family:"Poppins",sans-serif;overflow:hidden}
 .seated-hub__world{position:absolute;inset:0;opacity:0;transition:opacity .7s}.seated-hub.is-ready .seated-hub__world{opacity:1}.seated-hub__world canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}.seated-hub__world canvas:focus-visible{outline:2px solid #ffd400;outline-offset:-4px}
 .seated-hub__header{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:22px 30px;pointer-events:none;background:#0b1220aa;border-bottom:1px solid #b9c6d922}
 .seated-hub__header strong{font-size:17px;font-weight:500;letter-spacing:.25em;display:block}.seated-hub__header span{display:block;margin-top:8px;font-size:11px;letter-spacing:.14em;color:#b9c6d9}

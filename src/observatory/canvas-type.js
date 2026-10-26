@@ -1,11 +1,11 @@
-export const INSTRUMENT_FONT = '"IBM Plex Mono", monospace';
+export const INSTRUMENT_FONT = '"Poppins", monospace';
 let readiness;
 export function ensureInstrumentFonts() {
   if (!globalThis.document?.fonts) return Promise.resolve();
   return readiness ||= Promise.allSettled([
-    document.fonts.load('400 24px "IBM Plex Mono"'),
-    document.fonts.load('500 34px "IBM Plex Mono"'),
-    document.fonts.load('600 34px "Inter Variable"'),
+    document.fonts.load('400 24px "Poppins"'),
+    document.fonts.load('500 34px "Poppins"'),
+    document.fonts.load('600 34px "Poppins"'),
   ]);
 }
 // Fit without horizontal distortion or ellipsis: every verified name survives.

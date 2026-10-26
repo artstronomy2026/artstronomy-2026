@@ -294,15 +294,18 @@ export function App() {
         openMenuButtonColor="#fffef6"
         changeMenuColorOnOpen
         colors={["#3e7bef", "#56c6b5", "#ffd400"]}
-        logoUrl="/assets/artstronomy-logo.png"
+        logoUrl="/assets/artstronomy-wordmark.svg"
         accentColor="#ffd400"
         isFixed={true}
         closeOnClickAway={true}
       />
       <section className="hero" id="top">
         <div className="hero-title-wrap">
-          <p className="hero-kicker">UTAR SUNGAI LONG · FINAL YEAR EXHIBITION</p>
-          <h1 tabIndex={-1}>ARTS<span>TRONOMY</span></h1>
+          <div className="institution-logos" aria-label="Universiti Tunku Abdul Rahman, Faculty of Creative Industries">
+            <img className="institution-logo institution-logo--utar" src="/assets/utar-logo.png" alt="UTAR — Universiti Tunku Abdul Rahman" width="338" height="170" />
+            <img className="institution-logo institution-logo--fci" src="/assets/fci-logo.png" alt="Faculty of Creative Industries" width="400" height="460" />
+          </div>
+          <h1 tabIndex={-1}><img className="hero-wordmark" src="/assets/artstronomy-wordmark.svg" alt="ARTStronomy" width="1318" height="316" fetchPriority="high" /></h1>
         </div>
 
         <div className="mascot-stage">

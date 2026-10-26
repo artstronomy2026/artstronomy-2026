@@ -34,7 +34,7 @@
   align-items: center;
   gap: 10px;
   color: #fffef6;
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(1.02rem, 1.65vw, 1.42rem);
   letter-spacing: 0.055em;
   line-height: 1;
@@ -150,7 +150,7 @@
   display: inline-block;
   padding-right: 1.35em;
   color: #fffef6;
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(2.8rem, 5.2vw, 5.4rem);
   font-weight: 900;
   letter-spacing: -0.025em;
@@ -174,7 +174,7 @@
   top: 0.08em;
   right: 0;
   color: var(--sm-accent, #ffd400);
-  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(0.72rem, 1vw, 0.92rem);
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -235,3 +235,11 @@
   outline: 3px solid currentColor;
   outline-offset: 5px;
 }
+
+/* The supplied SVG replaces the former mascot/text lockup. */
+.staggered-menu-header .sm-logo-img{width:clamp(156px,18vw,240px);height:auto;filter:none}
+.staggered-menu-header .sm-logo[data-contrast="dark"] .sm-logo-img{filter:brightness(0)}
+
+/* Poppins needs room for the longest navigation label and its number. */
+.sm-panel-item{display:block;width:100%;font-size:clamp(1.75rem,3vw,3.25rem);line-height:1.12;padding-right:1em}
+@media(max-width:720px){.sm-panel-item{font-size:clamp(1.5rem,8vw,3.25rem);line-height:1.12}}

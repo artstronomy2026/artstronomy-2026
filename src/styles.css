@@ -1,7 +1,7 @@
 :root {
   color: #fffef6;
   background: #161f30;
-  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Poppins", sans-serif;
   font-synthesis: none;
   --navy: #161f30;
   --blue: #3e7bef;
@@ -56,7 +56,7 @@ main { overflow: clip; }
 .hero h1 {
   margin: 0;
   color: var(--cream);
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(4.2rem, 14.2vw, 13.5rem);
   line-height: 0.78;
   letter-spacing: -0.035em;
@@ -211,7 +211,7 @@ main { overflow: clip; }
 }
 .about-copy h2, .section-heading-row h2, .day-events h2, .visit h2 {
   margin: 0;
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(4.2rem, 10vw, 9.5rem);
   font-weight: 900;
   line-height: 0.84;
@@ -237,7 +237,7 @@ main { overflow: clip; }
 .eyebrow.dark { color: #234e99; }
 .disciplines h2 {
   margin: 0 0 clamp(50px, 8vw, 110px);
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(5rem, 14vw, 13rem);
   line-height: 0.8;
   text-transform: uppercase;
@@ -253,7 +253,7 @@ main { overflow: clip; }
   border-bottom: 1px solid rgba(22,31,48, 0.26);
 }
 .discipline-number, .event-number {
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-family: "Poppins", sans-serif;
   font-size: clamp(4.6rem, 10vw, 9rem);
   line-height: 0.8;
 }
@@ -1514,3 +1514,12 @@ footer {
 
 /* The intro focuses this heading for screen readers, without a decorative box. */
 .hero h1:focus{outline:none}
+
+/* Supplied exhibition wordmark and institution marks. */
+.institution-logos{display:flex;align-items:center;justify-content:flex-start;gap:clamp(24px,4vw,64px);margin:0 0 clamp(20px,3vw,40px)}
+.institution-logo{display:block;width:auto;object-fit:contain;flex:none}
+.institution-logo--utar{height:clamp(62px,6vw,92px)}
+.institution-logo--fci{height:clamp(86px,8vw,128px)}
+.hero .hero-title-wrap h1{font-size:inherit;line-height:1;white-space:normal}
+.hero-wordmark{width:100%;height:auto;max-width:1500px;margin-inline:auto}
+@media(max-width:767px){.institution-logos{margin-bottom:32px}.hero-wordmark{width:100%}.hero .hero-title-wrap{margin-top:96px}.hero{min-height:900px}}
