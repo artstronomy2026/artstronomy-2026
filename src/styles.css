@@ -882,7 +882,7 @@ footer {
   .event-card > img { height: 450px; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .hero { min-height: 930px; padding-inline: 18px; }
   .hero-title-wrap { margin-top: 92px; }
   .hero h1 { font-size: 20.2vw; white-space: normal; max-width: 100%; line-height: 0.83; }
@@ -1414,7 +1414,7 @@ footer {
   font-size: .78rem;
 }
 .zodiac-experience__back { position: absolute; z-index: 3; top: 90px; left: 18px; }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .ar-experience-tabs { top: max(58px, calc(env(safe-area-inset-top) + 48px)); left: 10px; }
   .ar-experience-tabs button { min-height: 32px; padding: 0 10px; font-size: .66rem; }
   .ar-camera--ar .ar-camera__instruction { top: max(108px, calc(env(safe-area-inset-top) + 101px)); max-width: calc(100vw - 20px); }
@@ -1434,7 +1434,7 @@ footer {
   .zodiac-experience__back { top: max(218px, calc(env(safe-area-inset-top) + 207px)); left: 10px; min-height: 34px; font-size: .72rem; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .ar-camera__top-actions {
     right: max(10px, env(safe-area-inset-right));
     top: max(10px, env(safe-area-inset-top));
@@ -1523,3 +1523,6 @@ footer {
 .hero .hero-title-wrap h1{font-size:inherit;line-height:1;white-space:normal}
 .hero-wordmark{width:100%;height:auto;max-width:1500px;margin-inline:auto}
 @media(max-width:767px){.institution-logos{margin-bottom:32px}.hero-wordmark{width:100%}.hero .hero-title-wrap{margin-top:96px}.hero{min-height:900px}}
+
+/* Keep the wider Poppins discipline heading inside narrow viewports. */
+@media(max-width:767px){.disciplines h2{font-size:clamp(1.75rem,13vw,3.5rem);line-height:1.05}}
