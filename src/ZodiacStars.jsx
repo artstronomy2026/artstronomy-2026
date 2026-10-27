@@ -264,10 +264,10 @@ export function ZodiacStars({ videoRef, stream, mirrored, onSave }) {
         if (stageRef.current === "reveal") {
           ctx.textAlign = "center";
           ctx.fillStyle = "rgba(255,226,125,.14)";
-          ctx.font = `${Math.min(w * .43, h * .55)}px serif`;
+          ctx.font = `${Math.min(w * .43, h * .55)}px "Poppins", sans-serif`;
           ctx.fillText(zodiacSigns[signRef.current][1], w / 2, h * .7);
           ctx.fillStyle = "#ffd400";
-          ctx.font = `700 ${Math.min(40, Math.max(22, w * .04))}px Georgia, serif`;
+          ctx.font = `700 ${Math.min(40, Math.max(22, w * .04))}px "Poppins", sans-serif`;
           ctx.fillText(`You awakened ${zodiacSigns[signRef.current][0]}`, w / 2, mobile ? h * .77 : h * .86);
         }
       }

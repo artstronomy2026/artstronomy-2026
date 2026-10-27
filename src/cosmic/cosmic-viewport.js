@@ -209,7 +209,7 @@ export function mountCosmicViewport(host, { creators = [], onError = () => {} } 
     const cx = width / 2, cy = height / 2, r = Math.min(width * .43, height * .38);
     hudCtx.strokeStyle = 'rgba(153,204,186,.14)'; hudCtx.lineWidth = 1;
     hudCtx.beginPath(); hudCtx.arc(cx, cy, r, 0, TAU); hudCtx.stroke();
-    hudCtx.font = '10px monospace'; hudCtx.fillStyle = 'rgba(168,200,187,.45)'; hudCtx.textAlign = 'center';
+    hudCtx.font = '10px Poppins, sans-serif'; hudCtx.fillStyle = 'rgba(168,200,187,.45)'; hudCtx.textAlign = 'center';
     for (let i = 0; i < 120; i++) {
       const a = i / 120 * TAU; const length = i % 10 === 0 ? 11 : 4;
       hudCtx.beginPath(); hudCtx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);

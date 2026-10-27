@@ -1,7 +1,7 @@
 :root {
   color: #fffef6;
   background: #161f30;
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-synthesis: none;
   --navy: #161f30;
   --blue: #3e7bef;
@@ -56,7 +56,7 @@ main { overflow: clip; }
 .hero h1 {
   margin: 0;
   color: var(--cream);
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(4.2rem, 14.2vw, 13.5rem);
   line-height: 0.78;
   letter-spacing: -0.035em;
@@ -211,7 +211,7 @@ main { overflow: clip; }
 }
 .about-copy h2, .section-heading-row h2, .day-events h2, .visit h2 {
   margin: 0;
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(4.2rem, 10vw, 9.5rem);
   font-weight: 900;
   line-height: 0.84;
@@ -237,7 +237,7 @@ main { overflow: clip; }
 .eyebrow.dark { color: #234e99; }
 .disciplines h2 {
   margin: 0 0 clamp(50px, 8vw, 110px);
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(5rem, 14vw, 13rem);
   line-height: 0.8;
   text-transform: uppercase;
@@ -253,7 +253,7 @@ main { overflow: clip; }
   border-bottom: 1px solid rgba(22,31,48, 0.26);
 }
 .discipline-number, .event-number {
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(4.6rem, 10vw, 9rem);
   line-height: 0.8;
 }
@@ -1332,7 +1332,7 @@ footer {
 .zodiac-experience__heading h2 {
   margin: 8px 0 4px;
   color: #fffef6;
-  font-family: Georgia, serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(2.6rem, 6.2vw, 5.8rem);
   font-weight: 500;
   line-height: 1.08;
@@ -1372,7 +1372,7 @@ footer {
   background-color: rgba(255, 224, 102, .16);
   transform: translateY(-3px);
 }
-.zodiac-experience__grid button > span { color: #ffd400; font-family: Georgia, serif; font-size: 2.1rem; line-height: 1; }
+.zodiac-experience__grid button > span { color: #ffd400; font-family: "Poppins",sans-serif; font-size: 2.1rem; line-height: 1; }
 .zodiac-experience__grid button strong { font-size: .8rem; letter-spacing: .02em; }
 .zodiac-experience__bottom {
   position: absolute;

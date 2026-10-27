@@ -5,3 +5,6 @@
 @font-face{font-family:'Poppins';font-style:normal;font-display:swap;font-weight:700;src:url('./poppins-latin-700-normal.woff2') format('woff2')}
 @font-face{font-family:'Poppins';font-style:normal;font-display:swap;font-weight:800;src:url('./poppins-latin-800-normal.woff2') format('woff2')}
 @font-face{font-family:'Poppins';font-style:normal;font-display:swap;font-weight:900;src:url('./poppins-latin-900-normal.woff2') format('woff2')}
+
+/* Form controls have browser defaults and must opt into the site typeface. */
+html,body,button,input,select,textarea,optgroup{font-family:"Poppins",sans-serif}

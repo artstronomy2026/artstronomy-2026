@@ -1,4 +1,4 @@
-export const INSTRUMENT_FONT = '"Poppins", monospace';
+export const INSTRUMENT_FONT = '"Poppins", sans-serif';
 let readiness;
 export function ensureInstrumentFonts() {
   if (!globalThis.document?.fonts) return Promise.resolve();
@@ -6,6 +6,9 @@ export function ensureInstrumentFonts() {
     document.fonts.load('400 24px "Poppins"'),
     document.fonts.load('500 34px "Poppins"'),
     document.fonts.load('600 34px "Poppins"'),
+    document.fonts.load('700 34px "Poppins"'),
+    document.fonts.load('800 34px "Poppins"'),
+    document.fonts.load('900 34px "Poppins"'),
   ]);
 }
 // Fit without horizontal distortion or ellipsis: every verified name survives.

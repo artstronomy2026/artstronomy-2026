@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=path.join(root,'public/cosmic');
 mkdirSync(path.join(destination,'vendor'),{recursive:true});
+mkdirSync(path.join(destination,'fonts'),{recursive:true});
+for(const name of ['poppins.css','Poppins-OFL.txt',...Array.from({length:6},(_,i)=>`poppins-latin-${400+i*100}-normal.woff2`)])
+  copyFileSync(path.join(root,'public/fonts',name),path.join(destination,'fonts',name));
 for(const name of ['index.html','cosmic-viewport.css','cosmic-viewport.js','creators.js','hand-tracking.js','README.md'])
   copyFileSync(path.join(root,'src/cosmic',name),path.join(destination,name));
 for(const name of ['three.module.js','three.core.js'])

@@ -34,7 +34,7 @@
   align-items: center;
   gap: 10px;
   color: #fffef6;
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(1.02rem, 1.65vw, 1.42rem);
   letter-spacing: 0.055em;
   line-height: 1;
@@ -150,7 +150,7 @@
   display: inline-block;
   padding-right: 1.35em;
   color: #fffef6;
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(2.8rem, 5.2vw, 5.4rem);
   font-weight: 900;
   letter-spacing: -0.025em;
@@ -174,7 +174,7 @@
   top: 0.08em;
   right: 0;
   color: var(--sm-accent, #ffd400);
-  font-family: "Poppins", sans-serif;
+  font-family: "Poppins",sans-serif;
   font-size: clamp(0.72rem, 1vw, 0.92rem);
   font-weight: 900;
   letter-spacing: 0.06em;
