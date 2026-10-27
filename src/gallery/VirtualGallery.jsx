@@ -6,6 +6,7 @@ import {MuseumMap} from './MuseumMap.jsx';
 import { wrapExhibit } from './gallery-layout.js';
 import { ImmersiveHelp } from '../immersive/ImmersiveHelp.jsx';
 import { isHandheld } from '../immersive/device-look.js';
+import { VRControl } from '../immersive/VRControl.jsx';
 import './virtual-gallery.css';
 
 export function VirtualGallery({ onWebsite, onClose, busy=false, onReady=()=>{} }) {
@@ -15,12 +16,14 @@ export function VirtualGallery({ onWebsite, onClose, busy=false, onReady=()=>{} 
   const mapVisible=useRef(false),lastPosition=useRef({x:0,z:5,yaw:0});mapVisible.current=mapOpen;
   const [selected,setSelected]=useState(0),[inspection,setInspection]=useState(null);
   const [motion,setMotion]=useState('off'),[xr,setXR]=useState(false),[xrSupported,setXRSupported]=useState(false);
+  const [vr,setVR]=useState(false);
   const [error,setError]=useState(''),[ready,setReady]=useState(false),[atEnd,setAtEnd]=useState(false),[endDismissed,setEndDismissed]=useState(false);
   const [status,setStatus]=useState('Opening the orbital art museum…');
   useEffect(()=>{
     let active=true;
     try {
       engine.current=createGallery({host:host.current,overlay:overlay.current,creators:creatorData,
+        onVR:value=>{if(active){setVR(value);setInspection(null);setMapOpen(false);}},
         onTour:value=>active&&setTour(value),
         onReady:()=>{if(active){setReady(true);onReady();}},onPosition:value=>{lastPosition.current=value;if(active&&mapVisible.current)setMapPosition(value);},
         onSelect:index=>active&&setSelected(index),onInspect:value=>active&&setInspection(value),
@@ -32,15 +35,16 @@ export function VirtualGallery({ onWebsite, onClose, busy=false, onReady=()=>{} 
     return()=>{active=false;engine.current?.dispose();engine.current=null;};
   },[]);
   useEffect(()=>{engine.current?.setBlocked(busy);},[busy,ready]);
-  useEffect(()=>{if(ready&&!busy&&!xr&&isHandheld())engine.current?.startMotion(false);},[ready,busy,xr]);
+  useEffect(()=>{if(ready&&!busy&&!xr&&!vr&&isHandheld())engine.current?.startMotion(false);},[ready,busy,xr,vr]);
   const visit=index=>{const next=wrapExhibit(index,creatorData.length);setSelected(next);if(engine.current){setInspection(null);engine.current.visit(next);}else setInspection({index:next,x:30,y:180});};
   const creator=inspection?creatorData[inspection.index]:null;
   return <section ref={overlay} className={`virtual-gallery ${xr?'virtual-gallery--xr':''}`} aria-label="ARTStronomy virtual exhibition">
     <div ref={host} className="virtual-gallery__scene" />
+    <VRControl available={ready&&engine.current?.supportsVR&&!xr} disabled={busy} active={vr} onEnter={()=>engine.current?.startVR()} onExit={()=>engine.current?.endVR()}/>
     <header className="virtual-gallery__heading"><h2>Orbital Art Museum</h2></header>
     <button className="virtual-gallery__back" onClick={()=>{if(xr)engine.current?.endAR();else onClose();}} aria-label={xr?'Exit walk-in AR':'Back to spaceship'}>{xr?'Exit AR':'Back to ship'}</button>
     <span className="sr-only" role="status">{status}</span>
-    <ImmersiveHelp ready={(ready||!!error)&&!busy} gallery fallback={xr?'Move your phone or tablet to explore. Open help to visit another creator.':''} motion={xr?'unavailable':motion} onMotion={enable=>enable?engine.current?.startMotion(true):engine.current?.stopMotion()}>
+    <ImmersiveHelp ready={(ready||!!error)&&!busy&&!vr} gallery fallback={xr?'Move your phone or tablet to explore. Open help to visit another creator.':''} motion={xr?'unavailable':motion} onMotion={enable=>enable?engine.current?.startMotion(true):engine.current?.stopMotion()}>
       {xrSupported&&!xr&&<button onClick={()=>engine.current?.startAR()}>Start walk-in AR</button>}
       <label className="virtual-gallery__help-select">Visit a creator<select aria-label="Visit a creator" value={selected} onChange={e=>visit(Number(e.target.value))}>{creatorData.map((item,index)=><option key={item.id} value={index}>{item.name} · {item.category}</option>)}</select></label>
       <button onClick={()=>{engine.current?.stopTour();setTour(false);engine.current?.home();}}>Return to atrium</button>

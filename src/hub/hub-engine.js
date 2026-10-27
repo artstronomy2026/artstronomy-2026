@@ -11,8 +11,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { buildHubScene } from './hub-scene.js';
 import { makeHubScreens } from './hub-screens.js';
 import { HUB_SCREENS, clampLook } from './hub-config.js';
+import { createVRView } from '../immersive/vr-view.js';
 
-export function createHub({host,onSelect,onHover,onReady,onFallback,monitorElement,initialCinematic,onMotion=()=>{}}) {
+export function createHub({host,onSelect,onHover,onReady,onFallback,monitorElement,initialCinematic,onMotion=()=>{},onVR=()=>{}}) {
   let renderer;
   try { renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); }
   catch { onFallback('3D is unavailable in this browser. The image view and all four destinations are still available.');return {dispose(){},home(){},focus(){},setCinematic(){},launch(id){onSelect(id);}}; }
@@ -41,17 +42,24 @@ export function createHub({host,onSelect,onHover,onReady,onFallback,monitorEleme
   const portalGeometry=new T.TorusGeometry(1,.055,20,128),portalMaterial=new T.MeshBasicMaterial({color:0x9cebdd});
   const ring=new T.Mesh(portalGeometry,portalMaterial);portal.add(ring);
   const outer=new T.Mesh(portalGeometry,new T.MeshBasicMaterial({color:0xf9d879}));outer.scale.setScalar(1.1);portal.add(outer);
-  let drag=null,hover=-1,lastTime=0,lastScreen=0,travel=null,frame=0,portrait=false,ready=false;
+  let drag=null,hover=-1,lastTime=0,lastScreen=0,travel=null,portrait=false,ready=false;
   // Hub yaw convention is opposite to Three's Euler yaw.
-  const sensors=createDeviceLook({read:()=>({yaw:-look.yaw,pitch:look.pitch}),apply:value=>Object.assign(look,clampLook(-value.yaw,value.pitch)),blocked:()=>!!cinematic||!!drag,onState:onMotion});
+  const sensors=createDeviceLook({read:()=>({yaw:-look.yaw,pitch:look.pitch}),apply:value=>Object.assign(look,clampLook(-value.yaw,value.pitch)),blocked:()=>!!cinematic||!!drag||!!vr?.active,onState:onMotion});
+  const seatedPose=()=>({x:eye.x,y:eye.y,z:eye.z,yaw:-current.yaw});
+  const vr=createVRView({renderer,scene,camera,
+    buttons:[{label:'Recenter seat',action:()=>vr.teleport({...seatedPose(),yaw:0})},{label:'Exit VR',action:()=>vr.end()?.catch(()=>{})}],
+    caption:()=> 'Spaceship · seated headset view',
+    beforeStart:()=>{sensors.stop();drag=null;controlDrag=null;setHover(null);},
+    onChange:onVR,afterEnd:()=>{lastTime=0;frameGate.reset();budget.reset();resize();},
+  });
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'),listeners=[];
   const listen=(el,event,fn,opts)=>{el.addEventListener(event,fn,opts);listeners.push(()=>el.removeEventListener(event,fn,opts));};
-  function resize(){monitorLayoutDirty=true;const {width,height}=host.getBoundingClientRect();if(!width||!height)return;portrait=width/height<.95;camera.aspect=width/height;camera.fov=portrait?72:57;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height);bloom.setSize(width*renderer.getPixelRatio()*.6,height*renderer.getPixelRatio()*.6);}
-  const budget=createRenderBudget(pixelRatio,ratio=>{renderer.setPixelRatio(ratio);composer.setPixelRatio(ratio);resize();});
+  function resize(){if(renderer.xr.isPresenting)return;monitorLayoutDirty=true;const {width,height}=host.getBoundingClientRect();if(!width||!height)return;portrait=width/height<.95;camera.aspect=width/height;camera.fov=portrait?72:57;camera.updateProjectionMatrix();renderer.setSize(width,height);composer.setSize(width,height);bloom.setSize(width*renderer.getPixelRatio()*.6,height*renderer.getPixelRatio()*.6);}
+  const budget=createRenderBudget(pixelRatio,ratio=>{if(!renderer.xr.isPresenting){renderer.setPixelRatio(ratio);composer.setPixelRatio(ratio);resize();}});
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
   function pick(event){const b=canvas.getBoundingClientRect();pointer.set((event.clientX-b.left)/b.width*2-1,-(event.clientY-b.top)/b.height*2+1);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(world.screens)[0]?.object.userData.id;}
   function setHover(id){const next=HUB_SCREENS.findIndex(s=>s.id===id);if(next===hover)return;if(hover>=0)screens.draw(hover,lastTime,false);hover=next;if(hover>=0)screens.draw(hover,lastTime,true);onHover(id||null);canvas.style.cursor=hover>=0?'pointer':'grab';}
-  function launch(id){if(cinematic)return;onSelect(id);}
+  function launch(id){if(cinematic||vr.active)return;onSelect(id);}
   function monitorPose(id){const index=Math.max(0,HUB_SCREENS.findIndex(s=>s.id===id)),mesh=world.screens[index];scene.updateMatrixWorld(true);const aim=mesh.getWorldPosition(new T.Vector3());const q=mesh.getWorldQuaternion(new T.Quaternion());
     const distance=Math.max(1.48/(2*Math.tan(T.MathUtils.degToRad(camera.fov)/2)*.78),2.34/(2*Math.tan(T.MathUtils.degToRad(camera.fov)/2)*camera.aspect*.9));
     return {aim,position:aim.clone().add(new T.Vector3(0,0,distance).applyQuaternion(q))};
@@ -68,18 +76,18 @@ export function createHub({host,onSelect,onHover,onReady,onFallback,monitorEleme
   }
   function focus(id){const index=HUB_SCREENS.findIndex(s=>s.id===id);if(index<0)return;const target=new T.Vector3();world.screens[index].getWorldPosition(target);look.yaw=Math.atan2(target.x-eye.x,eye.z-target.z);look.pitch=Math.atan2(target.y-eye.y,Math.hypot(target.x-eye.x,target.z-eye.z));setHover(id);}
   function home(){world.dock.open(0);world.dock.root.position.set(12,4,-50);sensors.reset();look.yaw=0;look.pitch=0;travel=null;camera.position.copy(eye);}
-  listen(canvas,'pointerdown',e=>{if(cinematic)return;pick(e);const control=raycaster.intersectObjects(world.details.controls)[0]?.object;if(control){controlDrag={index:control.userData.control,x:e.clientX};canvas.setPointerCapture(e.pointerId);return;}drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});});
-  listen(canvas,'pointermove',e=>{if(cinematic)return;if(controlDrag){world.details.adjust(controlDrag.index,(e.clientX-controlDrag.x)*.015);controlDrag.x=e.clientX;return;}if(drag){const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6)drag.moved=true;Object.assign(look,clampLook(look.yaw-dx*.0022,look.pitch+dy*.0018));drag.lastX=e.clientX;drag.lastY=e.clientY;if(drag.moved)setHover(null);}else setHover(pick(e));});
+  listen(canvas,'pointerdown',e=>{if(cinematic||vr.active)return;pick(e);const control=raycaster.intersectObjects(world.details.controls)[0]?.object;if(control){controlDrag={index:control.userData.control,x:e.clientX};canvas.setPointerCapture(e.pointerId);return;}drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});});
+  listen(canvas,'pointermove',e=>{if(cinematic||vr.active)return;if(controlDrag){world.details.adjust(controlDrag.index,(e.clientX-controlDrag.x)*.015);controlDrag.x=e.clientX;return;}if(drag){const dx=e.clientX-drag.lastX,dy=e.clientY-drag.lastY;if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>6)drag.moved=true;Object.assign(look,clampLook(look.yaw-dx*.0022,look.pitch+dy*.0018));drag.lastX=e.clientX;drag.lastY=e.clientY;if(drag.moved)setHover(null);}else setHover(pick(e));});
   listen(canvas,'pointerup',e=>{if(controlDrag){controlDrag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);return;}if(!drag)return;const moved=drag.moved;drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!moved){const id=pick(e);if(id)launch(id);}});
   listen(canvas,'pointercancel',()=>{drag=null;controlDrag=null;});listen(canvas,'pointerleave',()=>{if(!drag)setHover(null);});
-  listen(canvas,'keydown',e=>{if(cinematic)return;const arrows={ArrowLeft:[-.09,0],ArrowRight:[.09,0],ArrowUp:[0,.07],ArrowDown:[0,-.07]};if(arrows[e.key]){e.preventDefault();Object.assign(look,clampLook(look.yaw+arrows[e.key][0],look.pitch+arrows[e.key][1]));}if(e.key==='Home'){e.preventDefault();home();}if(e.key==='Enter'&&hover>=0){e.preventDefault();launch(HUB_SCREENS[hover].id);}});
-  listen(canvas,'webglcontextlost',e=>{e.preventDefault();active=false;cancelAnimationFrame(frame);onFallback('The 3D view was interrupted. You can still open any destination below.');});
-  function tick(time){if(disposed||!active||document.hidden)return;
+  listen(canvas,'keydown',e=>{if(cinematic||vr.active)return;const arrows={ArrowLeft:[-.09,0],ArrowRight:[.09,0],ArrowUp:[0,.07],ArrowDown:[0,-.07]};if(arrows[e.key]){e.preventDefault();Object.assign(look,clampLook(look.yaw+arrows[e.key][0],look.pitch+arrows[e.key][1]));}if(e.key==='Home'){e.preventDefault();home();}if(e.key==='Enter'&&hover>=0){e.preventDefault();launch(HUB_SCREENS[hover].id);}});
+  listen(canvas,'webglcontextlost',e=>{e.preventDefault();active=false;renderer.setAnimationLoop(null);onFallback('The 3D view was interrupted. You can still open any destination below.');});
+  function tick(time,xrFrame){if(disposed||!active||document.hidden)return;
     const monitorSettled=cinematic?.kind==='monitor'&&time-cinematic.started>=(cinematic.duration||0);
-    if(!frameGate.due(time,monitorSettled?15:quality.fps)){frame=requestAnimationFrame(tick);return;}
-    if(!monitorSettled)budget.sample(time*quality.fps/60);
+    if(!vr.active&&!frameGate.due(time,monitorSettled?15:quality.fps))return;
+    if(!vr.active&&!monitorSettled)budget.sample(time*quality.fps/60);
     const dt=Math.min((time-lastTime)/1000||.016,.05);lastTime=time;
-    if(cinematic){
+    if(vr.active){vr.update(xrFrame,time);}else if(cinematic){
       const t=cinematic.duration?Math.min(1,(time-cinematic.started)/cinematic.duration):1,e=t*t*(3-2*t);
       let destination=eye.clone(),aim=seatTarget.clone();
       if(cinematic.kind==='monitor'){const pose=monitorPose(cinematic.monitor||'scanner');destination=pose.position;aim=pose.aim;}
@@ -102,9 +110,9 @@ export function createHub({host,onSelect,onHover,onReady,onFallback,monitorEleme
     if(!reduced.matches){world.planets.forEach((p,i)=>{p.rotation.y+=dt*(.025+i*.006);});if(!monitorSettled&&time-lastScreen>180){screens.draw(2,time,hover===2);lastScreen=time;}}
     world.update(time,dt,reduced.matches);
     renderer.info.reset();
-    if(feedEnabled&&!monitorSettled&&!cinematic&&time-lastFeed>250){lastFeed=time;renderer.setRenderTarget(feedTarget);renderer.render(world.previewScene,world.previewCamera);renderer.setRenderTarget(null);}
+    if(!vr.active&&feedEnabled&&!monitorSettled&&!cinematic&&time-lastFeed>250){lastFeed=time;renderer.setRenderTarget(feedTarget);renderer.render(world.previewScene,world.previewCamera);renderer.setRenderTarget(null);}
     world.indicatorMaterials.forEach((mat,i)=>mat.emissiveIntensity=i===hover?2:.4);
-    composer.render();
+    if(vr.active)renderer.render(scene,camera);else composer.render();
     if(time-lastMetrics>1500){lastMetrics=time;
       // Preserve architecture and working destinations; shed optional passes first.
       if(renderer.info.render.calls>quality.maxDrawCalls){
@@ -112,9 +120,9 @@ export function createHub({host,onSelect,onHover,onReady,onFallback,monitorEleme
         else if(bloom.enabled)bloom.enabled=false;
       }
     }
-    if(!ready){ready=true;onReady();}frame=requestAnimationFrame(tick);
+    if(!ready){ready=true;onReady();}
   }
   if(initialCinematic)setCinematic(initialCinematic);
-  listen(document,'visibilitychange',()=>{cancelAnimationFrame(frame);lastTime=0;budget.reset();frameGate.reset();if(!document.hidden&&active)frame=requestAnimationFrame(tick);});frame=requestAnimationFrame(tick);
-  return {launch,focus,home,setCinematic,adjustConsole:(index,delta)=>world.details.adjust(index,delta),startMotion:gesture=>sensors.start(gesture),stopMotion:()=>sensors.stop(),dispose(){disposed=true;sensors.dispose();cancelAnimationFrame(frame);observer.disconnect();listeners.forEach(off=>off());screens.dispose();world.dispose();portalGeometry.dispose();portalMaterial.dispose();outer.material.dispose();textures.forEach(t=>t.dispose());feedTarget?.dispose();env.dispose();bloom.dispose();output.dispose();composer.dispose();renderer.dispose();canvas.remove();}};
+  listen(document,'visibilitychange',()=>{lastTime=0;budget.reset();frameGate.reset();});renderer.setAnimationLoop(tick);
+  return {supportsVR:true,startVR:()=>{if(!cinematic)return vr.start(seatedPose());},endVR:()=>vr.end(),launch,focus,home,setCinematic,adjustConsole:(index,delta)=>world.details.adjust(index,delta),startMotion:gesture=>{if(!vr.active)return sensors.start(gesture);},stopMotion:()=>sensors.stop(),dispose(){disposed=true;sensors.dispose();vr.dispose();renderer.setAnimationLoop(null);observer.disconnect();listeners.forEach(off=>off());screens.dispose();world.dispose();portalGeometry.dispose();portalMaterial.dispose();outer.material.dispose();textures.forEach(t=>t.dispose());feedTarget?.dispose();env.dispose();bloom.dispose();output.dispose();composer.dispose();renderer.dispose();canvas.remove();}};
 }

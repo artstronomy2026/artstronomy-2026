@@ -1,10 +1,10 @@
 # ARTStronomy Virtual Gallery
 
 An independent, client-side exhibition built into the existing Camera dialog.
-No iframe, hosted gallery account, subscription, remote scene or VR headset.
+No hosted gallery account or subscription. A VR headset is optional.
 
 - `VirtualGallery.jsx`: responsive controls, creator directory and exhibit details.
-- `gallery-engine.js`: Three.js room, navigation, raycast selection, device orientation and optional handheld WebXR.
+- `gallery-engine.js`: Three.js room, navigation, raycast selection, device orientation, handheld AR and optional headset VR.
 - `css-gallery-renderer.js`: same scene projected with CSS 3D when WebGL cannot start.
 - `gallery-layout.js`: exhibit positions, viewing stops and room boundaries.
 - `virtual-gallery.css`: scoped mobile/tablet/desktop presentation.
@@ -56,3 +56,24 @@ layout, Escape and sensor-unavailable fallback were checked there. Physical
 orientation and handheld AR require a real device test on the HTTPS site.
 
 Mobile navigation: tap the visible floor to walk to that point, or tap an artwork to approach its viewing stop. Drag to look. Multi-touch does not zoom or walk. Floor taps outside the room are ignored; blur cancels travel. Device orientation is recalibrated on arrival.
+
+## Optional headset view
+
+Open the spaceship or museum, then choose **Enter VR** when the browser reports
+`immersive-vr` support. Detection refreshes when XR devices change. Unsupported
+browsers keep the normal experience without a VR prompt. The browser requires
+an explicit action to enter VR; hardware capability alone never starts it.
+
+This first headset version needs no controllers, hand tracking or floor tracking.
+It uses a local reference space, suitable for seated, rotation-only viewing.
+Look down at a button and hold the centre reticle there for 1.6 seconds to select.
+The cockpit offers recenter and exit; the museum offers previous/next creator,
+atrium and exit. Museum travel teleports rather than driving the headset camera.
+Look away before selecting the same button again. Phone walk-in AR is separate
+and retains its existing DOM overlay and controls.
+
+The user's DPVR E3-C Lite requires its PC headset software to expose a compatible
+VR runtime to the browser. This is browser/runtime detection, not Bluetooth
+pairing. No headset driver is installed by this website. Physical DPVR operation,
+stereo comfort and frame rate must be checked on the user's headset; automated
+tests cover capability changes, dwell, pose alignment, errors and cleanup.

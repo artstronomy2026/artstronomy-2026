@@ -14,10 +14,11 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import { createCSSGalleryRenderer } from './css-gallery-renderer.js';
+import { createVRView } from '../immersive/vr-view.js';
 
 // Lazy-loaded scene. All navigation, textures, sensors and XR sessions are owned
 // here and released on exit. No hosted gallery service or tracking SDK is used.
-export function createGallery({ host, overlay, creators, onSelect, onStatus, onMotion, onXR, onError, onInspect = () => {}, onEnd = () => {}, onPosition=()=>{}, onReady=()=>{}, onMetrics=()=>{}, onTour=()=>{} }) {
+export function createGallery({ host, overlay, creators, onSelect, onStatus, onMotion, onXR, onError, onInspect = () => {}, onEnd = () => {}, onPosition=()=>{}, onReady=()=>{}, onMetrics=()=>{}, onTour=()=>{}, onVR=()=>{} }) {
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); }
   catch { renderer = createCSSGalleryRenderer(); }
@@ -98,6 +99,27 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     renderer.info.autoReset=false;
   }
   const raycaster = new THREE.Raycaster();
+  let reflectionBeforeVR = false;
+  const vr = renderer.isCSSFallback ? null : createVRView({ renderer, scene, camera,
+    buttons: [
+      { label: 'Previous creator', action: () => visit(current - 1) },
+      { label: 'Next creator', action: () => visit(current + 1) },
+      { label: 'Return to atrium', action: () => home() },
+      { label: 'Exit VR', action: () => vr.end()?.catch(() => {}) },
+    ],
+    caption: () => `${current + 1} / ${layout.length} · ${creators[current].name}`,
+    beforeStart: () => {
+      disableMotion(); clearInput(); tour = false; onTour(false); inspect(null);
+      if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+      reflectionBeforeVR = Boolean(reflector?.visible); if (reflector) reflector.visible = false;
+    },
+    onChange: onVR,
+    afterEnd: () => {
+      if (reflector) reflector.visible = reflectionBeforeVR;
+      lastTime = 0; frameGate.reset(); budget.reset(); resize();
+      onStatus('Back in the normal gallery. Touch, mouse and keyboard controls are ready.');
+    },
+  });
   function hitAt(x,y) {
     camera.updateMatrixWorld();root.updateMatrixWorld(true);
     const bounds=canvas.getBoundingClientRect();
@@ -115,7 +137,7 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     if(!lastInspection||lastInspection.index!==index||Math.abs(lastInspection.x-x)>3||Math.abs(lastInspection.y-y)>3){lastInspection={index,x,y};onInspect(lastInspection);}
   }
   function pick(x,y,walk=false){
-    if(inputBlocked)return;
+    if(inputBlocked||vr?.active)return;
     const hit=hitAt(x,y);
     if(walk&&!xrSession){
       if(hit){visit(hit.object.userData.index);return;}
@@ -133,11 +155,11 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
   }
   const sensors = createDeviceLook({
     read:()=>({yaw,pitch}), apply:value=>{yaw=value.yaw;pitch=THREE.MathUtils.clamp(value.pitch,-1.2,1.2);pinned=false;inspectPoint=null;},
-    blocked:()=>inputBlocked||!!xrSession||!!target||!!pointer,
+    blocked:()=>inputBlocked||!!xrSession||!!vr?.active||!!target||!!pointer,
     onState:state=>{motion=state==='active'||state==='starting';onMotion(state);}
   });
   function disableMotion() { sensors.stop(); }
-  function startMotion(gesture=false) { if(!xrSession)return sensors.start(gesture); }
+  function startMotion(gesture=false) { if(!xrSession&&!vr?.active)return sensors.start(gesture); }
   function toggleMotion() { if(motion)disableMotion();else return startMotion(true); }
   function nextLeg(){
     const destination=route.shift();if(!destination){target=null;sensors.reset();return;}
@@ -152,17 +174,20 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     pinned=false;inspectPoint=null;inspect(null);
     current = wrapExhibit(index, layout.length);
     const destination = visitPosition(layout[current],eyeHeight);
-    if (xrSession) xrAnchor = destination;
+    if (vr?.active) {
+      position.set(destination.x, eyeHeight, destination.z); yaw = destination.yaw; pitch = 0;
+      vr.teleport(destination);
+    } else if (xrSession) xrAnchor = destination;
     else {
       travelTo(destination);
 
     }
     if (notify) onSelect(current, false);
   }
-  function home() { pinned=false;inspect(null); if (xrSession) xrAnchor = { x: 0, y: eyeHeight, z: 5, yaw: 0 }; else { disableMotion(false); travelTo({ x: 0, y: eyeHeight, z: 5, yaw: 0 }); } onStatus('At the gallery entrance. Drag to look; select an exhibit to visit.'); }
+  function home() { pinned=false;inspect(null); if (vr?.active) {position.set(0,eyeHeight,5);yaw=0;pitch=0;vr.teleport({x:0,y:eyeHeight,z:5,yaw:0});} else if (xrSession) xrAnchor = { x: 0, y: eyeHeight, z: 5, yaw: 0 }; else { disableMotion(false); travelTo({ x: 0, y: eyeHeight, z: 5, yaw: 0 }); } onStatus('At the gallery entrance. Drag to look; select an exhibit to visit.'); }
   const touches = new Set();
   listen(canvas, 'pointerdown', event => {
-    if(inputBlocked)return;
+    if(inputBlocked||vr?.active)return;
     tour=false;onTour(false);
     if(event.pointerType==='touch'){
       touches.add(event.pointerId);
@@ -195,13 +220,13 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
   const navigationKeys = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
   listen(canvas, 'keydown', event => {
     if(event.key==='Escape'&&document.pointerLockElement===canvas){event.stopPropagation();document.exitPointerLock?.();return;}
-    if(inputBlocked)return;
+    if(inputBlocked||vr?.active)return;
     tour=false;onTour(false);
     const key = event.key.toLowerCase();
     if (navigationKeys.has(key)) { event.preventDefault(); keys.add(key); target = null;route=[]; }
     if (event.key === 'Enter') { const rect = canvas.getBoundingClientRect(); pick(rect.left + rect.width / 2, rect.top + rect.height / 2); }
   });
-  listen(document,'mousemove',event=>{if(document.pointerLockElement===canvas&&!inputBlocked&&!xrSession){yaw-=event.movementX*.002;pitch=THREE.MathUtils.clamp(pitch-event.movementY*.002,-1.2,1.2);}});
+  listen(document,'mousemove',event=>{if(document.pointerLockElement===canvas&&!inputBlocked&&!xrSession&&!vr?.active){yaw-=event.movementX*.002;pitch=THREE.MathUtils.clamp(pitch-event.movementY*.002,-1.2,1.2);}});
   listen(window, 'keyup', event => keys.delete(event.key.toLowerCase()));
   const clearInput = () => { keys.clear(); held.clear(); touches.clear();target=null;route=[];pointer = null; };
   listen(window, 'blur', clearInput); listen(canvas, 'blur', clearInput);
@@ -218,11 +243,11 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     root.position.set(p.x - offset.x, p.y - offset.y, p.z - offset.z);
   }
   async function startAR() {
-    if (disposed || xrPending || xrSession) return;
+    if (disposed || xrPending || xrSession || vr?.active) return;
     xrPending = true; disableMotion(false); clearInput();
     let session;
     try {
-      // No headset mode. DOM overlay is required so Exit and the exhibit controls
+      // Handheld AR uses a DOM overlay so Exit and the exhibit controls
       // remain reachable on a handheld screen.
       session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['dom-overlay'], optionalFeatures: ['local-floor'], domOverlay: { root: overlay } });
       if (disposed) { await session.end(); return; }
@@ -248,7 +273,9 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     if (disposed || document.hidden) {frameGate.reset();budget.reset();lastTime=0;return;}
     if(!renderer.xr.isPresenting){if(!frameGate.due(time,quality.fps))return;if(!renderer.isCSSFallback)budget.sample(time*quality.fps/60);}
     const dt = Math.min((time - (lastTime || time)) / 1000, .05); lastTime = time;
-    if (renderer.xr.isPresenting && frame) {
+    if (vr?.active) {
+      vr.update(frame, time);
+    } else if (renderer.xr.isPresenting && frame) {
       const pose = frame.getViewerPose(renderer.xr.getReferenceSpace());
       root.visible = Boolean(pose);
       if (!pose && !trackingLost) { trackingLost = true; onStatus('Tracking paused. Slowly move your phone in a well-lit area.'); }
@@ -274,15 +301,15 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
       camera.position.copy(position); camera.rotation.set(pitch, yaw, 0, 'YXZ');
     }
     if(!xrSession)museum.update(dt,time,reducedMotion.matches);
-    if(tour&&!target&&time>tourPause&&!xrSession&&!inputBlocked){visit(current+1);tourPause=Infinity;}
-    if(!xrSession){const end=position.z < -21.2;if(end!==atEnd){atEnd=end;onEnd(end);}}
-    if(time-lastInspect>100&&!xrSession&&!target){lastInspect=time;
+    if(tour&&!target&&time>tourPause&&!xrSession&&!vr?.active&&!inputBlocked){visit(current+1);tourPause=Infinity;}
+    if(!xrSession&&!vr?.active){const end=position.z < -21.2;if(end!==atEnd){atEnd=end;onEnd(end);}}
+    if(time-lastInspect>100&&!xrSession&&!vr?.active&&!target){lastInspect=time;
       const bounds=canvas.getBoundingClientRect();
       const point=inspectPoint||{x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2};
       if(pinned){const art=artMeshes[current];inspect({object:art});}else inspect(hitAt(point.x,point.y));
     }
     if(!renderer.isCSSFallback)renderer.info.reset();
-    if(composer&&!xrSession)composer.render();else renderer.render(scene,camera);
+    if(composer&&!renderer.xr.isPresenting)composer.render();else renderer.render(scene,camera);
     if(!reportedReady){reportedReady=true;onReady();}
     if(time-lastPosition>180&&!xrSession){lastPosition=time;onPosition({x:position.x,z:position.z,yaw});}
     if(!renderer.isCSSFallback&&time-lastMetrics>1500){lastMetrics=time;const calls=renderer.info.render.calls;
@@ -295,10 +322,13 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
   onStatus(renderer.isCSSFallback?'Compatibility view · tap floor or artwork to walk; drag to look.':'Tap floor or artwork to walk · drag to look · hover for creator details.');
   return {
     supportsAR: !renderer.isCSSFallback,
+    supportsVR: !renderer.isCSSFallback,
+    startVR: () => {if(!inputBlocked&&!xrSession&&!xrPending)return vr?.start({x:position.x,y:eyeHeight,z:position.z,yaw});},
+    endVR: () => vr?.end(),
     setBlocked(value){inputBlocked=value;if(value){clearInput();sensors.stop();}},
     setEyeHeight(seated){eyeHeight=seated?SEAT_HEIGHT:EYE_HEIGHT;position.y=eyeHeight;if(target){target.y=eyeHeight;target.to.y=eyeHeight;}},
     visitWing(id){tour=false;onTour(false);const wing=WINGS.find(w=>w.id===id);if(wing)travelTo({...wing.anchor,y:eyeHeight,yaw:id==='identity'?Math.PI/2:id==='interaction'?-Math.PI/2:0});},
-    startTour(){if(xrSession||reducedMotion.matches)return false;tour=true;onTour(true);tourPause=Infinity;visit(0);return true;},
+    startTour(){if(xrSession||vr?.active||reducedMotion.matches)return false;tour=true;onTour(true);tourPause=Infinity;visit(0);return true;},
     stopTour(){tour=false;onTour(false);target=null;route=[];},
     lockPointer(){if(!isHandheld()){const request=canvas.requestPointerLock?.();request?.catch?.(()=>onStatus('Mouse look unavailable. Drag to look is still ready.'));}},
     visit, home, toggleMotion, startMotion, stopMotion:()=>sensors.stop(), startAR,
@@ -308,7 +338,7 @@ export function createGallery({ host, overlay, creators, onSelect, onStatus, onM
     move: (key, down) => { if (down) { held.add(key); target = null; } else held.delete(key); },
     step: key => { if (xrSession) return; target = null; const f = key === 'w' ? 1 : key === 's' ? -1 : 0, s = key === 'd' ? 1 : key === 'a' ? -1 : 0; const safe = constrainPosition(position.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s) * .7, position.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s) * .7); position.x = safe.x; position.z = safe.z; },
     dispose() {
-      disposed = true; sensors.dispose();
+      disposed = true; sensors.dispose(); vr?.dispose();
       listeners.forEach(remove => remove()); observer.disconnect(); renderer.setAnimationLoop(null);
       xrSession?.end().catch(() => {}); resources.forEach(resource => resource.dispose());
       if(document.pointerLockElement===canvas)document.exitPointerLock?.();bloom?.dispose();composer?.dispose();environment?.dispose();renderer.dispose(); canvas.remove();
