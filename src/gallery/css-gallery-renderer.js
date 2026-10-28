@@ -11,7 +11,7 @@ export function createCSSGalleryRenderer() {
   function face(mesh, w, h, position, rotation) {
     const pixels=mesh.userData.cssPixelsPerUnit||100;
     const element = document.createElement('div');
-    element.style.cssText = `width:${w * pixels}px;height:${h * pixels}px;background:${mesh.material.color.getStyle()};backface-visibility:hidden;pointer-events:none;overflow:hidden;`;
+    element.style.cssText = `width:${w * pixels}px;height:${h * pixels}px;background:${mesh.material.transparent?'transparent':mesh.material.color.getStyle()};backface-visibility:hidden;pointer-events:none;overflow:hidden;`;
     const object = new CSS3DObject(element);
     object.position.copy(position); object.rotation.set(...rotation); object.scale.setScalar(1/pixels); object.updateMatrix();
     object.matrixAutoUpdate = false;

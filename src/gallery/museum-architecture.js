@@ -55,8 +55,11 @@ export function buildMuseum({shell,exhibits,layout,own,textureFor,textTexture,qu
   const sign=plane(shell,4.3,.67,wing.id==='identity'?-7.05:wing.id==='interaction'?7.05:0,4.35,wing.id==='animation'?-7.05:0,mat);
   if(wing.id!=='animation')sign.rotation.y=wing.id==='identity'?Math.PI/2:-Math.PI/2;signs.push(sign);
  }
- const welcome=textTexture([{text:'ARTSTRONOMY',size:88,y:110},{text:'ORBITAL ART MUSEUM  /  2026',size:34,y:174}],{width:1024,height:210,bg:'#161f30',color:'#ffd400'});
- const arrival=plane(shell,5.8,1.18,0,3.2,6.6,welcome);arrival.rotation.y=Math.PI;
+ const welcome=own(new T.MeshBasicMaterial({color:'#161f30',side:T.DoubleSide}));
+ const arrival=new T.Group();arrival.position.set(0,3.2,6.6);arrival.rotation.y=Math.PI;shell.add(arrival);
+ plane(arrival,5.8,1.65,0,0,0,welcome);
+ // The supplied vector artwork is centered and retains its native proportions.
+ plane(arrival,4.3,4.3*316/1318,0,0,.012,own(new T.MeshBasicMaterial({map:textureFor('/assets/artstronomy-wordmark.svg'),transparent:true,toneMapped:false})));
  const exit=textTexture([{text:'YOUR NEXT ORBIT',size:60,y:80},{text:'CONTINUE TO THE EXHIBITION WEBSITE',size:28,y:139}],{width:1024,height:180});plane(shell,5,1.05,0,2.4,-23.85,exit);
  const poolData=new Uint8Array(64*64*4);for(let y=0;y<64;y++)for(let x=0;x<64;x++){const i=(y*64+x)*4,d=Math.hypot((x-31.5)/32,(y-31.5)/32);poolData[i]=poolData[i+1]=poolData[i+2]=255;poolData[i+3]=Math.pow(Math.max(0,1-d),2)*255;}
  const poolTexture=own(new T.DataTexture(poolData,64,64));poolTexture.needsUpdate=true;
