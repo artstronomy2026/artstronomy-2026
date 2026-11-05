@@ -1,117 +1,387 @@
 import * as THREE from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import { GifReader } from './omggif.js';
 
-const embedded=window.parent!==window && new URLSearchParams(location.search).get('embedded')==='1';
-const $=selector=>document.querySelector(selector);
-const intro=$('#intro'),experience=$('#experience'),stage=$('#stage'),notice=$('#notice');
-let trackingReady=false;
-let mind,renderer,scene,camera,art,active=false,paused=matchMedia('(prefers-reduced-motion: reduce)').matches,found=false,sessionMode='',clock=0,lastTime=0;
-const resources=new Set(),own=value=>(resources.add(value),value);
-const buttons=[$('#start'),$('#preview')];
-function status(text){$('#tracking').textContent=text;}
-function cleanup(){
-  active=false;trackingReady=false;
+const $ = selector => document.querySelector(selector);
+const intro = $('#intro');
+const experience = $('#experience');
+const stage = $('#stage');
+const notice = $('#notice');
+const select = $('#target-select');
+const controls = $('#layer-controls');
+const replay = $('#replay');
+const embedded = window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const buttons = [$('#start'), $('#preview')];
+const titles = [
+  'Idea', 'Spacing', 'Workload', 'Hammer', 'Undo', 'Layers', 'Tablet', 'Design apps',
+  'Dab', 'Paint palette', 'Coffee', 'Due o’clock', 'Deadline', 'Click', 'Error 404', 'Pilot',
+];
+const stickerName = index => `Hoshi Sticker-${String(index).padStart(2, '0')}`;
+
+for (const [i, title] of titles.entries()) {
+  select.add(new Option(`Sticker ${String(i + 1).padStart(2, '0')} · ${title}`, i + 1));
+}
+
+const loader = new THREE.TextureLoader();
+const origin = new THREE.Vector3();
+let mode, mind, renderer, scene, camera, trackerReady, resizePreview;
+let activeTarget, effect, requested = 0, returning = false;
+let posterPromise, stickerSurface;
+let elapsed = 0, lastTime = 0, shownLayers = 0, manualLayers = false;
+
+function status(text, hint = '') {
+  $('#tracking').textContent = text;
+  $('#hint').textContent = hint;
+}
+
+function cleanup() {
+  returning = true;
+  requested++;
   renderer?.setAnimationLoop(null);
   mind?.controller?.stopProcessVideo();
   mind?.controller?.worker?.terminate();
-  if(mind?.video){mind.video.srcObject?.getTracks().forEach(track=>track.stop());mind.video.pause();mind.video.srcObject=null;}
-  resources.forEach(resource=>resource.dispose?.());resources.clear();
-  renderer?.dispose();renderer?.forceContextLoss();
+  if (mind?.video) {
+    mind.video.srcObject?.getTracks().forEach(track => track.stop());
+    mind.video.pause();
+    mind.video.srcObject = null;
+  }
+  if (resizePreview) removeEventListener('resize', resizePreview);
+  renderer?.dispose();
+  renderer?.forceContextLoss();
 }
-window.addEventListener('pagehide',cleanup,{once:true});
-let returning=false;
-function returnToShip(){if(returning)return;returning=true;cleanup();window.parent.postMessage({type:'artstronomy:poster-close'},location.origin);}
-if(embedded){
-  $('#back-to-ship').hidden=false;
-  $('#back-to-ship').onclick=returnToShip;
-  $('#home').onclick=event=>{event.preventDefault();returnToShip();};
-  document.addEventListener('keydown',event=>{
-    if(event.key==='Escape'){event.preventDefault();returnToShip();}
-    if(event.key==='Tab'){
-      const controls=[...document.querySelectorAll('a[href],button:not(:disabled)')].filter(node=>node.getClientRects().length);
-      const first=controls[0],last=controls.at(-1);
-      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
-      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+
+function close(toShip = false) {
+  if (returning) return;
+  cleanup();
+  if (embedded && (toShip || mode !== 'preview')) {
+    window.parent.postMessage({type:'artstronomy:poster-close'}, location.origin);
+  } else {
+    location.reload();
+  }
+}
+
+addEventListener('pagehide', cleanup, {once:true});
+$('#close').onclick = () => close();
+if (embedded) {
+  $('#back-to-ship').hidden = false;
+  $('#back-to-ship').onclick = () => close(true);
+  $('#home').onclick = event => { event.preventDefault(); close(true); };
+}
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && (mode || embedded)) {
+    event.preventDefault();
+    close(embedded);
+  }
+  if (event.key === 'Tab' && embedded) {
+    const visible = [...document.querySelectorAll('a[href],button:not(:disabled),select')]
+      .filter(node => node.getClientRects().length);
+    if (event.shiftKey && document.activeElement === visible[0]) {
+      event.preventDefault();
+      visible.at(-1)?.focus();
+    } else if (!event.shiftKey && document.activeElement === visible.at(-1)) {
+      event.preventDefault();
+      visible[0]?.focus();
     }
-  });
+  }
+});
+
+async function fetchAsset(path) {
+  const response = await fetch(path);
+  if (!response.ok) throw Error(`Could not load ${path} (HTTP ${response.status})`);
+  return response;
 }
-$('#close').onclick=()=>{if(embedded&&sessionMode==='ar')returnToShip();else{cleanup();location.reload();}};
-$('#pause').onclick=()=>{paused=!paused;$('#pause').textContent=paused?'Play animation':'Pause animation';};
-function show(mode){
-  sessionMode=mode;intro.hidden=true;experience.hidden=false;active=true;
-  $('#mode').textContent=mode==='ar'?'POSTER TRACKING':'ANIMATION PREVIEW · NO CAMERA';
-  $('#close').textContent=mode==='ar'?(embedded?'Back to spaceship':'Close camera'):'Close preview';
-  $('#scan-frame').hidden=mode!=='ar';
-  $('#pause').hidden=false;$('#pause').textContent=paused?'Play animation':'Pause animation';
+
+function plane(texture, width, height, transparent) {
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, transparent, depthWrite: !transparent, toneMapped: false,
+  });
+  return new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+}
+
+async function buildPoster() {
+  const { aspect, layers } = await (await fetchAsset('poster-layers.json')).json();
+  const root = new THREE.Group();
+  const meshes = await Promise.all(layers.map(async ({ image, bounds }, index) => {
+    const texture = await loader.loadAsync(image);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const [left, top, width, height] = bounds;
+    const mesh = plane(texture, width, height, index !== 0);
+    mesh.position.set(left + width / 2 - .5, aspect / 2 - top - height / 2, 0);
+    mesh.renderOrder = index + 1;
+    const layer = new THREE.Group();
+    layer.add(mesh);
+    root.add(layer);
+    return layer;
+  }));
+  return { root, meshes, layers, reveal: layers.map(() => 0) };
+}
+
+function posterArt() {
+  if (!posterPromise) {
+    posterPromise = buildPoster().catch(error => {
+      posterPromise = null;
+      throw error;
+    });
+  }
+  return posterPromise;
+}
+
+function getStickerSurface() {
+  if (!stickerSurface) {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 480;
+    const context = canvas.getContext('2d');
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const root = plane(texture, 1, 1, true);
+    root.renderOrder = 1;
+    stickerSurface = {root, context, texture};
+  }
+  return stickerSurface;
+}
+
+async function stickerArt(index) {
+  const response = await fetchAsset(`Hoshi-Sticker-${String(index).padStart(2, '0')}.gif`);
+  const reader = new GifReader(new Uint8Array(await response.arrayBuffer()));
+  if (reader.width !== 480 || reader.height !== 480 || !reader.numFrames()) throw Error('Invalid sticker GIF');
+  const frameEnds = [];
+  let duration = 0;
+  for (let i = 0; i < reader.numFrames(); i++) {
+    duration += reader.frameInfo(i).delay * 10;
+    frameEnds.push(duration);
+  }
+  const {root, context, texture} = getStickerSurface();
+  const buffer = context.createImageData(reader.width, reader.height);
+  return {root, context, texture, reader, frameEnds, buffer, frame: -1, restore: null};
+}
+
+function drawSticker(sticker, milliseconds) {
+  const {reader, frameEnds, buffer, context, texture} = sticker;
+  const upcoming = frameEnds.findIndex(end => end > milliseconds);
+  const target = upcoming < 0 ? frameEnds.length - 1 : upcoming;
+  if (target === sticker.frame) return;
+  if (target < sticker.frame) {
+    sticker.frame = -1;
+    sticker.restore = null;
+    buffer.data.fill(0);
+  }
+  for (let i = sticker.frame + 1; i <= target; i++) {
+    if (i > 0) {
+      const last = reader.frameInfo(i - 1);
+      if (last.disposal === 2) {
+        for (let row = last.y; row < last.y + last.height; row++) {
+          const start = (row * reader.width + last.x) * 4;
+          buffer.data.fill(0, start, start + last.width * 4);
+        }
+      } else if (last.disposal === 3 && sticker.restore) {
+        buffer.data.set(sticker.restore);
+      }
+    }
+    sticker.restore = reader.frameInfo(i).disposal === 3 ? buffer.data.slice() : null;
+    reader.decodeAndBlitFrameRGBA(i, buffer.data);
+  }
+  context.putImageData(buffer, 0, 0);
+  texture.needsUpdate = true;
+  sticker.frame = target;
+}
+
+function setLayer(step) {
+  if (step === shownLayers) return;
+  shownLayers = step;
+  const total = effect.layers.length;
+  $('#layer-label').textContent = `${step} / ${total} · ${effect.layers[step - 1].name}`;
+  $('#prev-layer').disabled = step <= 1;
+  $('#next-layer').disabled = step >= total;
+}
+
+function resetEffect() {
+  if (!effect) return;
+  elapsed = 0;
+  if (activeTarget.index === 0) {
+    shownLayers = 0;
+    effect.reveal.fill(0);
+    manualLayers = reducedMotion.matches;
+    setLayer(1);
+  } else {
+    drawSticker(effect, reducedMotion.matches ? Infinity : 0);
+  }
+}
+
+replay.onclick = resetEffect;
+for (const [id, delta] of [['#prev-layer', -1], ['#next-layer', 1]]) {
+  $(id).onclick = () => {
+    manualLayers = true;
+    setLayer(shownLayers + delta);
+  };
+}
+
+function clearEffect() {
+  requested++;
+  if (effect) effect.root.removeFromParent();
+  effect = null;
+  activeTarget = null;
+  replay.hidden = true;
+  controls.hidden = true;
+  experience.classList.remove('is-found');
+}
+
+async function activate(index, parent) {
+  clearEffect();
+  const target = {index, parent};
+  activeTarget = target;
+  const request = requested;
+  const label = index ? `${stickerName(index)} · ${titles[index - 1]}` : 'Official poster';
+  experience.classList.add('is-found');
+  status(`Loading ${label}…`);
+  try {
+    const artwork = await (index === 0 ? posterArt() : stickerArt(index));
+    if (requested !== request || returning) return;
+    effect = artwork;
+    effect.root.position.set(0, 0, index && mode === 'ar' ? .12 : 0);
+    effect.root.rotation.set(0, 0, 0);
+    effect.root.scale.setScalar(1);
+    parent.add(effect.root);
+    controls.hidden = index !== 0;
+    replay.hidden = false;
+    status(label, index === 0 ? 'Use the arrows to explore the poster one layer at a time.' : '');
+    resetEffect();
+  } catch (error) {
+    if (requested !== request || returning) return;
+    console.error('AR artwork:', error);
+    status('Effect could not load', mode === 'preview' ? 'Select an effect to try again.' : 'Move off the artwork, then scan it again.');
+  }
+}
+
+function scanPrompt() {
+  status('Find the poster or a Hoshi sticker', 'Keep one design in view. Use even light and avoid glare.');
+}
+
+function render(now) {
+  const delta = lastTime ? Math.min(.1, (now - lastTime) / 1000) : 0;
+  lastTime = now;
+  if (document.hidden) return;
+  if (effect) {
+    elapsed += delta;
+    if (activeTarget.index === 0) {
+      if (!manualLayers) setLayer(Math.min(effect.layers.length, 1 + Math.floor(elapsed / 1.05)));
+      effect.meshes.forEach((layer, index) => {
+        const visible = index < shownLayers;
+        const target = visible ? 1 : 0;
+        const blend = reducedMotion.matches || index === 0 ? 1 : Math.min(delta * 8, 1);
+        const amount = effect.reveal[index] = THREE.MathUtils.lerp(effect.reveal[index], target, blend);
+        layer.visible = visible || amount > .01;
+        layer.position.set((index % 2 ? -.018 : .023) * index * amount,
+          .014 * index * amount, .017 + index * .042 * amount);
+        layer.children[0].material.opacity = index === 0 ? 1 : amount;
+      });
+      if (mode === 'preview') {
+        effect.root.rotation.y = reducedMotion.matches ? 0 : .20 + Math.sin(elapsed * .65) * .16;
+      }
+    } else if (!reducedMotion.matches) {
+      drawSticker(effect, elapsed * 1000);
+    }
+  }
+  renderer.render(scene, camera);
+}
+
+function show(nextMode) {
+  mode = nextMode;
+  intro.hidden = true;
+  experience.hidden = false;
+  const preview = mode === 'preview';
+  experience.classList.toggle('is-preview', preview);
+  $('#preview-picker').hidden = !preview;
+  $('#scan-frame').hidden = preview;
+  $('#mode').textContent = preview ? 'PREVIEW · NO CAMERA' : 'AR CAMERA';
+  $('#close').textContent = preview ? 'Close preview' : embedded ? 'Back to spaceship' : 'Close camera';
   $('#close').focus();
 }
-function fail(error){
-  console.error('Poster experience:',error);cleanup();experience.hidden=true;intro.hidden=false;
-  notice.textContent=error?.name==='NotAllowedError'?'Camera access was denied. Allow camera access in your browser, then try again.':error?.name==='NotFoundError'?'No camera was found. You can preview the animation on a device with 3D graphics support.':'The AR view could not start. Try Safari or Chrome with 3D graphics enabled. Reload to try again.';
-  $('#start').disabled=false;$('#start').textContent='Reload and try again';$('#start').onclick=()=>location.reload();$('#preview').disabled=true;notice.focus();
+
+function fail(error, cameraRequested = false) {
+  if (returning) return;
+  console.error('ARTStronomy AR:', error);
+  cleanup();
+  experience.hidden = true;
+  intro.hidden = false;
+  notice.textContent = cameraRequested
+    ? 'The camera could not start. Check browser camera access, then reload to try again.'
+    : 'The preview could not start. Reload and try a browser with WebGL support.';
+  for (const button of buttons) button.disabled = false;
+  $('#start').onclick = () => location.reload();
+  $('#preview').onclick = () => { location.hash = 'preview'; location.reload(); };
+  notice.focus();
 }
-function lighting(){scene.add(new THREE.HemisphereLight(0xfff9d8,0x173d2d,2));const key=new THREE.DirectionalLight(0xffeab4,3);key.position.set(-1,2,4);scene.add(key);const rim=new THREE.DirectionalLight(0x82d8b5,1.2);rim.position.set(2,.5,1);scene.add(rim);}
-async function createArtwork(parent,{preview=false}={}){
-  const root=new THREE.Group();parent.add(root);
-  if(preview){
-    const texture=await new THREE.TextureLoader().loadAsync('poster.png');texture.colorSpace=THREE.SRGBColorSpace;own(texture);
-    const plane=new THREE.Mesh(own(new THREE.PlaneGeometry(1,1.5)),own(new THREE.MeshBasicMaterial({map:texture})));plane.position.z=-.025;root.add(plane);
-  }
-  const halo=new THREE.Mesh(own(new THREE.CircleGeometry(.45,64)),own(new THREE.MeshBasicMaterial({color:0x08291c,transparent:true,opacity:.94,depthWrite:false})));
-  halo.scale.y=1.15;halo.position.set(0,-.04,.015);root.add(halo);
-  const orbit=new THREE.Group();orbit.position.set(0,-.06,.09);root.add(orbit);
-  const gold=own(new THREE.MeshStandardMaterial({color:0xffe573,metalness:.65,roughness:.28}));
-  for(let i=0;i<2;i++){const ring=new THREE.Mesh(own(new THREE.TorusGeometry(.48+i*.035,.003,6,96)),gold);ring.scale.y=.56;ring.rotation.z=i?.45:-.45;orbit.add(ring);}
-  const sparks=[];
-  for(let i=0;i<22;i++){
-    const dot=new THREE.Mesh(own(new THREE.SphereGeometry(i%5===0?.013:.006,8,6)),gold);orbit.add(dot);sparks.push(dot);
-  }
-  const float=new THREE.Group();float.position.set(0,-.025,.22);root.add(float);
-  const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
-  const {scene:model}=await loader.loadAsync('/assets/mascot-3d-web.glb');
-  const bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());model.position.sub(center);
-  const fit=new THREE.Group();fit.add(model);fit.scale.setScalar(.74/Math.max(size.x,size.y));float.add(fit);
-  model.traverse(object=>{if(object.geometry)own(object.geometry);for(const m of object.material?Array.isArray(object.material)?object.material:[object.material]:[]){own(m);for(const value of Object.values(m))if(value?.isTexture)own(value);}});
-  return {root,float,orbit,sparks};
-}
-function render(now){
-  if(!active)return;
-  const dt=Math.min(.05,lastTime?(now-lastTime)/1000:0);lastTime=now;
-  if(!document.hidden&&!paused&&(found||sessionMode==='preview'))clock+=dt;
-  if(art){art.float.position.y=-.025+Math.sin(clock*1.8)*.025;art.float.rotation.set(-.04,Math.sin(clock*.65)*.16,Math.sin(clock*.9)*.025);
-    art.sparks.forEach((dot,i)=>{const angle=i/22*Math.PI*2+clock*.18;dot.position.set(Math.cos(angle)*.5,Math.sin(angle)*.29,.025+Math.sin(angle*2+clock)*.03);});}
-  if(!document.hidden)renderer.render(scene,camera);
-}
-async function startAR(){
-  buttons.forEach(b=>b.disabled=true);notice.textContent='Preparing poster tracking…';
-  try{
-    if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera API unavailable');
-    const {MindARThree}=await import('./vendor/mindar-image-three.prod.js');
-    show('ar');status('Loading Hoshi and the poster tracker…');
-    mind=new MindARThree({container:stage,imageTargetSrc:'targets.mind',maxTrack:1,uiLoading:'no',uiScanning:'no',uiError:'no',warmupTolerance:3,missTolerance:6,filterMinCF:.001,filterBeta:1000});
-    ({renderer,scene,camera}=mind);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;
-    lighting();const anchor=mind.addAnchor(0);art=await createArtwork(anchor.group);
-    anchor.onTargetFound=()=>{if(!active)return;found=true;experience.classList.add('is-found');status('Poster found · Hoshi is here!');$('#hint').textContent='Move gently around the poster to explore the layers.';};
-    anchor.onTargetLost=()=>{if(!active)return;found=false;experience.classList.remove('is-found');status('Point back at the poster');$('#hint').textContent='Keep the artwork visible. Avoid glare and moving too quickly.';};
-    status('Allow the back camera to scan your poster…');
+
+async function startAR() {
+  buttons.forEach(button => { button.disabled = true; });
+  notice.textContent = 'Preparing image tracking…';
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw Error('Camera API unavailable');
+    const {MindARThree} = await import('./vendor/mindar-image-three.prod.js');
+    if (returning) return;
+    show('ar');
+    status('Allow camera access to scan the artwork');
+    mind = new MindARThree({
+      container:stage, imageTargetSrc:'targets.mind', maxTrack:1, uiLoading:'no',
+      uiScanning:'no', uiError:'no', warmupTolerance:3, missTolerance:6,
+      filterMinCF:.001, filterBeta:1000,
+    });
+    ({renderer, scene, camera} = mind);
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    for (let index = 0; index <= titles.length; index++) {
+      const anchor = mind.addAnchor(index);
+      anchor.onTargetFound = () => { if (!returning) activate(index, anchor.group); };
+      anchor.onTargetLost = () => {
+        if (returning || activeTarget?.parent !== anchor.group) return;
+        clearEffect();
+        scanPrompt();
+      };
+    }
     await mind.start();
-    if(!active){cleanup();return;}
-    trackingReady=true;
-    if(document.hidden)mind.controller.stopProcessVideo();
-    if(!found)status('Find the ARTStronomy poster');
+    if (returning) { cleanup(); return; }
+    trackerReady = true;
+    if (document.hidden) mind.controller.stopProcessVideo();
+    if (!activeTarget) scanPrompt();
     renderer.setAnimationLoop(render);
-  }catch(error){fail(error);}
+  } catch (error) {
+    fail(error, true);
+  }
 }
-async function preview(){
-  buttons.forEach(b=>b.disabled=true);notice.textContent='Loading the animation preview…';
-  try{
-    show('preview');status('Animation preview');$('#hint').textContent='For live AR, open the camera and point it at the printed poster.';
-    renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;stage.appendChild(renderer.domElement);
-    scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(40,1,.01,20);camera.position.set(0,0,2.65);lighting();
-    const resize=()=>{camera.aspect=innerWidth/innerHeight;camera.position.z=camera.aspect<.7?3.35:2.65;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);};resize();window.addEventListener('resize',resize);
-    art=await createArtwork(scene,{preview:true});renderer.setAnimationLoop(render);
-  }catch(error){fail(error);}
+
+function preview() {
+  buttons.forEach(button => { button.disabled = true; });
+  try {
+    show('preview');
+    renderer = new THREE.WebGLRenderer({alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    stage.appendChild(renderer.domElement);
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(40, 1, .01, 20);
+    resizePreview = () => {
+      camera.aspect = stage.clientWidth / stage.clientHeight;
+      camera.position.z = Math.max(2.45, 1.65 / camera.aspect);
+      camera.lookAt(origin);
+      camera.updateProjectionMatrix();
+      renderer.setSize(stage.clientWidth, stage.clientHeight);
+    };
+    resizePreview();
+    addEventListener('resize', resizePreview);
+    select.onchange = () => activate(Number(select.value), scene);
+    select.onchange();
+    renderer.setAnimationLoop(render);
+  } catch (error) {
+    fail(error);
+  }
 }
-$('#start').onclick=startAR;$('#preview').onclick=preview;
-document.addEventListener('visibilitychange',()=>{lastTime=0;if(trackingReady&&document.hidden&&sessionMode==='ar'){mind?.controller?.stopProcessVideo();}else if(trackingReady&&active&&sessionMode==='ar'&&mind?.controller){mind.controller.processVideo(mind.video);}});
+
+$('#start').onclick = startAR;
+$('#preview').onclick = preview;
+if (location.hash === '#preview') preview();
+document.addEventListener('visibilitychange', () => {
+  lastTime = 0;
+  if (!trackerReady || returning) return;
+  if (document.hidden) mind.controller.stopProcessVideo();
+  else mind.controller.processVideo(mind.video);
+});

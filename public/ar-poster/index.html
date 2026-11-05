@@ -1,22 +1,48 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#161f30"><title>ARTStronomy · Living Poster</title><link rel="stylesheet" href="poster.css">
-<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
-</head><body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#161f30">
+  <title>ARTStronomy · AR Camera</title>
+  <link rel="stylesheet" href="poster.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
+</head>
+<body>
 <main id="intro">
-  <nav><a id="home" href="../" target="_top">ARTSTRONOMY</a><span>AR POSTER / 2026</span><button id="back-to-ship" class="secondary" hidden>Back to spaceship</button></nav>
-  <div class="layout"><figure class="poster"><img src="poster.png" alt="ARTStronomy exhibition poster featuring Hoshi. 18–20 December 2026, 11 AM–8 PM daily, GMBB Level 5."><figcaption>YOUR POSTER IS THE SCAN TARGET</figcaption></figure>
-  <section class="copy"><span class="eyebrow">A LITTLE ART. ANOTHER DIMENSION.</span><h1>Meet Hoshi.<br><em>Beyond the print.</em></h1><p>Point your camera at this poster. Watch Hoshi rise from the artwork as golden orbits come to life.</p>
-  <ol><li>Print the poster, or display it on another screen.</li><li>Start the camera and allow access.</li><li>Fit the whole poster in view, then move closer slowly.</li></ol>
-  <div class="actions"><button id="start">Start AR camera</button><button id="preview" class="secondary">Preview animation</button></div>
-  <p id="notice" tabindex="-1" role="status" aria-live="polite">Use the back camera on your phone or tablet. No headset needed.</p>
-  <a class="download" href="poster.png" download="ARTStronomy-AR-Poster.png">Download the poster</a>
-  <footer>18–20 DECEMBER 2026<br>11 AM–8 PM DAILY · GMBB LEVEL 5</footer></section></div>
+  <nav><a id="home" href="../" target="_top">ARTSTRONOMY</a><span>AR CAMERA / 2026</span><button id="back-to-ship" class="secondary" hidden>Back to spaceship</button></nav>
+  <div class="layout">
+    <figure class="poster"><img src="poster.png" width="1040" height="1470" alt="Official ARTStronomy poster with Hoshi, a gold wordmark, and five constellations. 18–20 December 2026, 11 AM–8 PM, GMBB Level 5."><figcaption>OFFICIAL ARTSTRONOMY POSTER</figcaption></figure>
+    <section class="copy">
+      <span class="eyebrow">ARTSTRONOMY 2026</span>
+      <h1>See the print<br><em>come to life.</em></h1>
+      <p>Scan the official poster to reveal its five layers, or scan any of the 16 Hoshi stickers to play its animation.</p>
+      <ol><li>Start the camera and allow access.</li><li>Fit one printed design in the frame. A second screen works too.</li><li>For the poster, move your phone gently to see the layers at different depths.</li></ol>
+      <div class="actions"><button id="start">Start AR camera</button><button id="preview" class="secondary">Preview effects</button></div>
+      <p id="notice" tabindex="-1" role="status" aria-live="polite">Use the back camera on your phone or tablet.</p>
+      <a class="download" href="poster.png" download="ARTStronomy-Official-Poster.png">Download the poster</a>
+      <footer>18–20 DECEMBER 2026<br>11 AM–8 PM DAILY · GMBB LEVEL 5</footer>
+    </section>
+  </div>
 </main>
-<section id="experience" hidden aria-label="AR poster camera">
-  <div id="stage"></div>
-  <header class="hud"><div><strong>ARTSTRONOMY</strong><span id="mode">LIVING POSTER</span></div><button id="close" class="secondary">Close camera</button></header>
+<section id="experience" hidden aria-label="ARTStronomy AR camera">
+  <div id="stage" aria-hidden="true"></div>
+  <header class="hud"><div><strong>ARTSTRONOMY</strong><span id="mode">AR CAMERA</span></div><button id="close" class="secondary">Close camera</button></header>
+  <div id="preview-picker" hidden><label for="target-select">Preview effect</label><select id="target-select"><option value="0">Official poster</option></select></div>
   <div id="scan-frame" aria-hidden="true"></div>
-  <div class="status"><p id="tracking" role="status" aria-live="polite">Starting camera…</p><p id="hint">Keep the whole poster in view. Use even light and avoid glare.</p><button id="pause" class="secondary" hidden>Pause animation</button></div>
+  <div class="status">
+    <p id="tracking" role="status" aria-live="polite">Starting camera…</p>
+    <p id="hint"></p>
+    <div class="effect-controls">
+      <div id="layer-controls" hidden>
+        <button id="prev-layer" class="secondary" aria-label="Previous poster layer">←</button>
+        <span id="layer-label" role="status"></span>
+        <button id="next-layer" class="secondary" aria-label="Next poster layer">→</button>
+      </div>
+      <button id="replay" class="secondary" hidden>Replay</button>
+    </div>
+  </div>
 </section>
 <script type="module" src="poster.js"></script>
-</body></html>
+</body>
+</html>
