@@ -7,7 +7,6 @@ const experience = $('#experience');
 const stage = $('#stage');
 const notice = $('#notice');
 const controls = $('#layer-controls');
-const replay = $('#replay');
 const embedded = window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const startButton = $('#start');
@@ -145,7 +144,7 @@ async function stickerArt(index) {
   }
   const {root, context, texture} = getStickerSurface();
   const buffer = context.createImageData(reader.width, reader.height);
-  return {root, context, texture, reader, frameEnds, buffer, frame: -1, restore: null};
+  return {root, context, texture, reader, frameEnds, duration, buffer, frame: -1, restore: null};
 }
 
 function drawSticker(sticker, milliseconds) {
@@ -187,8 +186,7 @@ function setLayer(step) {
   $('#next-layer').disabled = step >= total;
 }
 
-function resetEffect() {
-  if (!effect) return;
+function startEffect() {
   elapsed = 0;
   if (activeTarget.index === 0) {
     shownLayers = 0;
@@ -200,7 +198,6 @@ function resetEffect() {
   }
 }
 
-replay.onclick = resetEffect;
 for (const [id, delta] of [['#prev-layer', -1], ['#next-layer', 1]]) {
   $(id).onclick = () => {
     manualLayers = true;
@@ -213,7 +210,6 @@ function clearEffect() {
   if (effect) effect.root.removeFromParent();
   effect = null;
   activeTarget = null;
-  replay.hidden = true;
   controls.hidden = true;
   experience.classList.remove('is-found');
 }
@@ -235,9 +231,8 @@ async function activate(index, parent) {
     effect.root.scale.setScalar(1);
     parent.add(effect.root);
     controls.hidden = index !== 0;
-    replay.hidden = false;
     status(label, index === 0 ? 'Use the arrows to explore the poster one layer at a time.' : '');
-    resetEffect();
+    startEffect();
   } catch (error) {
     if (requested !== request || returning) return;
     console.error('AR artwork:', error);
@@ -268,7 +263,7 @@ function render(now) {
         layer.children[0].material.opacity = index === 0 ? 1 : amount;
       });
     } else if (!reducedMotion.matches) {
-      drawSticker(effect, elapsed * 1000);
+      drawSticker(effect, (elapsed * 1000) % effect.duration);
     }
   }
   renderer.render(scene, camera);
