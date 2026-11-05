@@ -6,25 +6,19 @@ const intro = $('#intro');
 const experience = $('#experience');
 const stage = $('#stage');
 const notice = $('#notice');
-const select = $('#target-select');
 const controls = $('#layer-controls');
 const replay = $('#replay');
 const embedded = window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const buttons = [$('#start'), $('#preview')];
+const startButton = $('#start');
 const titles = [
   'Idea', 'Spacing', 'Workload', 'Hammer', 'Undo', 'Layers', 'Tablet', 'Design apps',
   'Dab', 'Paint palette', 'Coffee', 'Due o’clock', 'Deadline', 'Click', 'Error 404', 'Pilot',
 ];
 const stickerName = index => `Hoshi Sticker-${String(index).padStart(2, '0')}`;
 
-for (const [i, title] of titles.entries()) {
-  select.add(new Option(`Sticker ${String(i + 1).padStart(2, '0')} · ${title}`, i + 1));
-}
-
 const loader = new THREE.TextureLoader();
-const origin = new THREE.Vector3();
-let mode, mind, renderer, scene, camera, trackerReady, resizePreview;
+let mind, renderer, scene, camera, trackerReady;
 let activeTarget, effect, requested = 0, returning = false;
 let posterPromise, stickerSurface;
 let elapsed = 0, lastTime = 0, shownLayers = 0, manualLayers = false;
@@ -45,15 +39,14 @@ function cleanup() {
     mind.video.pause();
     mind.video.srcObject = null;
   }
-  if (resizePreview) removeEventListener('resize', resizePreview);
   renderer?.dispose();
   renderer?.forceContextLoss();
 }
 
-function close(toShip = false) {
+function close() {
   if (returning) return;
   cleanup();
-  if (embedded && (toShip || mode !== 'preview')) {
+  if (embedded) {
     window.parent.postMessage({type:'artstronomy:poster-close'}, location.origin);
   } else {
     location.reload();
@@ -61,19 +54,19 @@ function close(toShip = false) {
 }
 
 addEventListener('pagehide', cleanup, {once:true});
-$('#close').onclick = () => close();
+$('#close').onclick = close;
 if (embedded) {
   $('#back-to-ship').hidden = false;
-  $('#back-to-ship').onclick = () => close(true);
-  $('#home').onclick = event => { event.preventDefault(); close(true); };
+  $('#back-to-ship').onclick = close;
+  $('#home').onclick = event => { event.preventDefault(); close(); };
 }
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && (mode || embedded)) {
+  if (event.key === 'Escape' && (!experience.hidden || embedded)) {
     event.preventDefault();
-    close(embedded);
+    close();
   }
   if (event.key === 'Tab' && embedded) {
-    const visible = [...document.querySelectorAll('a[href],button:not(:disabled),select')]
+    const visible = [...document.querySelectorAll('a[href],button:not(:disabled)')]
       .filter(node => node.getClientRects().length);
     if (event.shiftKey && document.activeElement === visible[0]) {
       event.preventDefault();
@@ -237,7 +230,7 @@ async function activate(index, parent) {
     const artwork = await (index === 0 ? posterArt() : stickerArt(index));
     if (requested !== request || returning) return;
     effect = artwork;
-    effect.root.position.set(0, 0, index && mode === 'ar' ? .12 : 0);
+    effect.root.position.set(0, 0, index ? .12 : 0);
     effect.root.rotation.set(0, 0, 0);
     effect.root.scale.setScalar(1);
     parent.add(effect.root);
@@ -248,7 +241,7 @@ async function activate(index, parent) {
   } catch (error) {
     if (requested !== request || returning) return;
     console.error('AR artwork:', error);
-    status('Effect could not load', mode === 'preview' ? 'Select an effect to try again.' : 'Move off the artwork, then scan it again.');
+    status('Effect could not load', 'Move off the artwork, then scan it again.');
   }
 }
 
@@ -274,9 +267,6 @@ function render(now) {
           .014 * index * amount, .017 + index * .042 * amount);
         layer.children[0].material.opacity = index === 0 ? 1 : amount;
       });
-      if (mode === 'preview') {
-        effect.root.rotation.y = reducedMotion.matches ? 0 : .20 + Math.sin(elapsed * .65) * .16;
-      }
     } else if (!reducedMotion.matches) {
       drawSticker(effect, elapsed * 1000);
     }
@@ -284,42 +274,33 @@ function render(now) {
   renderer.render(scene, camera);
 }
 
-function show(nextMode) {
-  mode = nextMode;
+function showCamera() {
   intro.hidden = true;
   experience.hidden = false;
-  const preview = mode === 'preview';
-  experience.classList.toggle('is-preview', preview);
-  $('#preview-picker').hidden = !preview;
-  $('#scan-frame').hidden = preview;
-  $('#mode').textContent = preview ? 'PREVIEW · NO CAMERA' : 'AR CAMERA';
-  $('#close').textContent = preview ? 'Close preview' : embedded ? 'Back to spaceship' : 'Close camera';
+  $('#close').textContent = embedded ? 'Back to spaceship' : 'Close camera';
   $('#close').focus();
 }
 
-function fail(error, cameraRequested = false) {
+function fail(error) {
   if (returning) return;
   console.error('ARTStronomy AR:', error);
   cleanup();
   experience.hidden = true;
   intro.hidden = false;
-  notice.textContent = cameraRequested
-    ? 'The camera could not start. Check browser camera access, then reload to try again.'
-    : 'The preview could not start. Reload and try a browser with WebGL support.';
-  for (const button of buttons) button.disabled = false;
-  $('#start').onclick = () => location.reload();
-  $('#preview').onclick = () => { location.hash = 'preview'; location.reload(); };
+  notice.textContent = 'The camera could not start. Check browser camera access, then reload to try again.';
+  startButton.disabled = false;
+  startButton.onclick = () => location.reload();
   notice.focus();
 }
 
 async function startAR() {
-  buttons.forEach(button => { button.disabled = true; });
+  startButton.disabled = true;
   notice.textContent = 'Preparing image tracking…';
   try {
     if (!navigator.mediaDevices?.getUserMedia) throw Error('Camera API unavailable');
     const {MindARThree} = await import('./vendor/mindar-image-three.prod.js');
     if (returning) return;
-    show('ar');
+    showCamera();
     status('Allow camera access to scan the artwork');
     mind = new MindARThree({
       container:stage, imageTargetSrc:'targets.mind', maxTrack:1, uiLoading:'no',
@@ -345,40 +326,11 @@ async function startAR() {
     if (!activeTarget) scanPrompt();
     renderer.setAnimationLoop(render);
   } catch (error) {
-    fail(error, true);
-  }
-}
-
-function preview() {
-  buttons.forEach(button => { button.disabled = true; });
-  try {
-    show('preview');
-    renderer = new THREE.WebGLRenderer({alpha:true, antialias:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    stage.appendChild(renderer.domElement);
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(40, 1, .01, 20);
-    resizePreview = () => {
-      camera.aspect = stage.clientWidth / stage.clientHeight;
-      camera.position.z = Math.max(2.45, 1.65 / camera.aspect);
-      camera.lookAt(origin);
-      camera.updateProjectionMatrix();
-      renderer.setSize(stage.clientWidth, stage.clientHeight);
-    };
-    resizePreview();
-    addEventListener('resize', resizePreview);
-    select.onchange = () => activate(Number(select.value), scene);
-    select.onchange();
-    renderer.setAnimationLoop(render);
-  } catch (error) {
     fail(error);
   }
 }
 
-$('#start').onclick = startAR;
-$('#preview').onclick = preview;
-if (location.hash === '#preview') preview();
+startButton.onclick = startAR;
 document.addEventListener('visibilitychange', () => {
   lastTime = 0;
   if (!trackerReady || returning) return;

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#161f30">
   <title>ARTStronomy · AR Camera</title>
-  <link rel="stylesheet" href="poster.css?v=original-ratio">
+  <link rel="stylesheet" href="poster.css?v=camera-only">
   <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
 </head>
 <body>
@@ -18,17 +18,15 @@
       <h1>See the print<br><em>come to life.</em></h1>
       <p>Scan the official poster to reveal its five layers, or scan any of the 16 Hoshi stickers to play its animation.</p>
       <ol><li>Start the camera and allow access.</li><li>Fit one printed design in the frame. A second screen works too.</li><li>For the poster, move your phone gently to see the layers at different depths.</li></ol>
-      <div class="actions"><button id="start">Start AR camera</button><button id="preview" class="secondary">Preview effects</button></div>
+      <div class="actions"><button id="start">Start AR camera</button></div>
       <p id="notice" tabindex="-1" role="status" aria-live="polite">Use the back camera on your phone or tablet.</p>
-      <a class="download" href="poster.png" download="ARTStronomy-Official-Poster.png">Download the poster</a>
       <footer>18–20 DECEMBER 2026<br>11 AM–8 PM DAILY · GMBB LEVEL 5</footer>
     </section>
   </div>
 </main>
 <section id="experience" hidden aria-label="ARTStronomy AR camera">
   <div id="stage" aria-hidden="true"></div>
-  <header class="hud"><div><strong>ARTSTRONOMY</strong><span id="mode">AR CAMERA</span></div><button id="close" class="secondary">Close camera</button></header>
-  <div id="preview-picker" hidden><label for="target-select">Preview effect</label><select id="target-select"><option value="0">Official poster</option></select></div>
+  <header class="hud"><div><strong>ARTSTRONOMY</strong><span>AR CAMERA</span></div><button id="close" class="secondary">Close camera</button></header>
   <div id="scan-frame" aria-hidden="true"></div>
   <div class="status">
     <p id="tracking" role="status" aria-live="polite">Starting camera…</p>
@@ -43,6 +41,6 @@
     </div>
   </div>
 </section>
-<script type="module" src="poster.js"></script>
+<script type="module" src="poster.js?v=camera-only"></script>
 </body>
 </html>
