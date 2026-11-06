@@ -1,11 +1,5 @@
-# ARTStronomy mascot scanner
+# ARTStronomy Radio Scanner
 
-Shared scanner UI for the cockpit monitor and standalone /radio-scanner/ page.
-Tune using the slider, spectrum or arrow keys; hold near a signal to reveal one
-of four existing Hoshi expressions. The percentage measures simulated tuning
-proximity, not camera confidence or physical detection.
+Tune the waveform or slider and hold near a signal to reveal a photograph from the ARTStronomy Gallery. The teal panel shows the photo, original caption name and any available catalogue reference or exposure time. The blue percentage shows simulated tuning proximity.
 
-LiDAR is a static visual concept with no sensor function. There are no sound
-controls or Hoshi/Poster buttons. The integrated scanner preserves optional
-pinch hand control; the standalone version uses mouse, touch and keyboard.
-The expression sheet is the existing official hoshi-emotions.webp asset.
+The same scanner runs in the spaceship monitor and as a standalone page. The site build includes its artwork and fonts. The spaceship also supports its optional hand tuning control.

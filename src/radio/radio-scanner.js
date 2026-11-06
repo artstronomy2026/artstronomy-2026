@@ -1,30 +1,27 @@
 import {createHandSignal} from './hand-signal.js';
 import {BAND,LOCK_DELAY,LOCK_RADIUS,clampFrequency,normalizeFrequency,makeBeacons,nearestBeacon,signalMatch} from './signal-model.js';
-import {brandSignals} from './brand-signals.js';
+import {gallerySignals} from './gallery-signals.js';
 
 // One shared, dependency-free experience for the physical monitor and static embed.
 export function mountRadioScanner(host) {
-  const beacons=makeBeacons(brandSignals),root=document.createElement('section');
+  const beacons=makeBeacons(gallerySignals),root=document.createElement('section');
   root.className='radio';root.setAttribute('aria-label','ARTStronomy radio lounge');
   root.innerHTML=`<div class="radio__workspace">
-    <header class="radio__nav"><span class="radio__wordmark">ARTSTRONOMY</span><span class="radio__nav-caption">THE RADIO LOUNGE</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div><span class="radio__muted-state">MASCOT SCANNER</span></div></header>
+    <header class="radio__nav"><span class="radio__wordmark">ARTSTRONOMY</span><span class="radio__nav-caption">THE RADIO LOUNGE</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div></div></header>
     <section class="radio__hero" aria-label="Featured exhibition artwork">
-      <div class="radio__hero-copy"><span class="radio__eyebrow" data-eyebrow></span><h2 data-headline></h2><p data-description></p><button type="button" class="radio__explore" data-explore>Find your signal</button></div>
-      <figure class="radio__hero-art"><div class="radio__emotion" data-image role="img" aria-label="Hidden Hoshi expression"></div></figure>
+      <div class="radio__hero-copy"><span class="radio__eyebrow">ARTSTRONOMY GALLERY</span><h2 data-headline></h2><p data-description></p><button type="button" class="radio__explore" data-explore>Find your signal</button></div>
+      <figure class="radio__hero-art"><img data-image alt="" decoding="async"></figure>
 
     </section>
     <div class="radio__bento">
       <section class="radio__card radio__tuner" aria-label="Signal tuner">
-        <div class="radio__card-head"><h3>Follow the signal.</h3><span data-status>Hoshi found</span></div>
+        <div class="radio__card-head"><h3>Follow the signal.</h3><span data-status>Exploring</span></div>
         <div class="radio__band"><canvas data-spectrum aria-hidden="true"></canvas><div class="radio__needle" aria-hidden="true"></div></div>
         <label class="radio__dial-label">Slide to explore<input data-frequency-input type="range" min="1200" max="1700" step="1" aria-label="Explore exhibition signals"></label>
         <div class="radio__signal-labels"><span>Drag, tap or use arrow keys</span><span>Hold steady to reveal</span></div>
       </section>
-      <section class="radio__card radio__detection" aria-label="Simulated signal match"><span class="radio__eyebrow">SIGNAL DETECTION</span><strong class="radio__percentage" data-percentage>0%</strong><progress data-progress max="100" value="0" aria-label="Simulated signal match percentage"></progress><span data-match>Searching for Hoshi</span><small>Simulated signal match</small></section>
-      <section class="radio__card radio__lidar" aria-label="LiDAR detection visual concept only"><span class="radio__eyebrow">LiDAR DETECTION</span><div class="radio__lidar-map" aria-hidden="true"><i></i><b>✦</b></div><strong>Spatial scan</strong><small>Visual concept only · sensor inactive</small></section>
+      <section class="radio__card radio__detection" aria-label="Simulated signal match"><span class="radio__eyebrow">SIGNAL DETECTION</span><strong class="radio__percentage" data-percentage>0%</strong><progress data-progress max="100" value="0" aria-label="Simulated signal match percentage"></progress><span data-match>Searching for a signal</span><small>Simulated signal match</small></section>
     </div>
-    <footer class="radio__footer"><span>Tune in. Reveal a new side of Hoshi.</span><span data-tracking>Mouse, touch & keyboard ready</span></footer>
-    <p class="radio__notice" data-notice role="status" hidden></p>
 
   </div>`;
   host.append(root);
@@ -34,26 +31,34 @@ export function mountRadioScanner(host) {
   let frequency=BAND.min,movementAnchor=frequency,locked=null,selected=beacons[0];
   let frame=0,disposed=false,visible=true,pointerId=null,lastPointer=-Infinity,lastMoved=performance.now(),lastVisual=0,lastTime=0,clock=0;
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
-  const notice=text=>{q('[data-notice]').textContent=text;q('[data-notice]').hidden=!text;};
-  function renderArtwork(beacon){
-    selected=beacon;
-    q('[data-eyebrow]').textContent='REVEAL THE MASCOT';
-    q('[data-headline]').innerHTML=locked?`${beacon.name}<br>Hoshi.`:'Who’s on<br>your radar?';
-    q('[data-description]').textContent=locked?beacon.description:'Move the dial and hold on a signal to reveal a Hoshi expression.';
-    const image=q('[data-image]');image.style.backgroundPosition=`${beacon.index*100/3}% center`;
-    image.setAttribute('aria-label',locked?`${beacon.name} Hoshi`:'Hidden Hoshi expression');
-    root.classList.toggle('is-revealed',Boolean(locked));
+  const photo = q('[data-image]');
+  const handSlot = q('[data-hand-control-slot]');
+  function renderArtwork(beacon) {
+    selected = beacon;
+    const { number, name, catalog, exposure } = beacon;
+    q('[data-headline]').textContent = name;
+    root.classList.toggle('has-long-title', name.length > 26);
+    q('[data-description]').textContent = [
+      catalog,
+      exposure && `Exposure · ${exposure} minutes`,
+    ].filter(Boolean).join(' · ');
+    photo.alt = name;
+    photo.src = new URL(`./gallery-${number}.webp`, import.meta.url).href;
   }
   function update(){
     input.value=frequency;input.setAttribute('aria-valuetext',locked?`${locked.name} signal`:'Searching for a signal');needle.style.left=`${normalizeFrequency(frequency)*100}%`;
-    q('[data-status]').textContent=locked?`${locked.name} found`:'Exploring';
+    q('[data-status]').textContent=locked?'Signal found':'Exploring';
     const percentage=signalMatch(beacons,frequency);
     q('[data-percentage]').textContent=`${percentage}%`;
     q('[data-progress]').value=percentage;
-    q('[data-match]').textContent=locked?'Expression revealed':percentage>=95?'Hold steady to reveal':'Keep tuning';
-    renderArtwork(locked||selected);
+    q('[data-match]').textContent=locked?'Gallery photo revealed':percentage>=95?'Hold steady to reveal':'Keep tuning';
   }
-  function lock(beacon){if(locked===beacon)return;locked=beacon;renderArtwork(beacon);update();}
+  function lock(beacon) {
+    if (locked === beacon) return;
+    locked = beacon;
+    if (beacon !== selected) renderArtwork(beacon);
+    update();
+  }
   function tune(value,{jump=false,hand=false}={}){
     const next=clampFrequency(value);
     if(Math.abs(next-movementAnchor)>.35){movementAnchor=next;lastMoved=performance.now();}
@@ -91,10 +96,14 @@ export function mountRadioScanner(host) {
   }
   renderArtwork(selected);update();resize();frame=requestAnimationFrame(tick);
   return {
-    handControlSlot: q('[data-hand-control-slot]'),
+    handControlSlot: handSlot,
     tune,
     setHand(hand){if(disposed)return;if(performance.now()-lastPointer<1600){handSignal.reset();return;}const next=handSignal.update(hand,frequency);if(next!==null)tune(next,{hand:true});},
-    setTrackingStatus(text){if(!disposed)q('[data-tracking]').textContent=text;},
+    setTrackingStatus(text) {
+      if (disposed) return;
+      if (handSlot.querySelector('button[aria-pressed="true"]')) handSlot.title = text;
+      else handSlot.removeAttribute('title');
+    },
     destroy(){if(disposed)return;disposed=true;cancelAnimationFrame(frame);abort.abort();observer.disconnect();intersection.disconnect();root.remove();},
   };
 }
