@@ -1,4 +1,4 @@
-import {mkdirSync,copyFileSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
+import {mkdirSync,copyFileSync,readdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -11,6 +11,10 @@ writeFileSync(path.join(destination,'brand-signals.js'),readFileSync(path.join(r
 writeFileSync(path.join(destination,'radio-scanner.js'),readFileSync(path.join(root,'src/radio/radio-scanner.js'),'utf8').replaceAll('/assets/','./assets/'));
 writeFileSync(path.join(destination,'radio-scanner.css'),readFileSync(path.join(root,'src/radio/radio-scanner.css'),'utf8').replaceAll('/assets/','./assets/').replaceAll('/fonts/','./fonts/'));
 for(const name of ['hoshi-mascot.webp','hoshi-poster.webp','hoshi-emotions.webp'])copyFileSync(path.join(root,'public/assets',name),path.join(destination,'assets',name));
+const scannerSource=path.join(root,'src/radio');
+for(const name of readdirSync(scannerSource)){
+ if(name==='gallery-signals.js'||/^gallery-\d{2}\.webp$/.test(name))copyFileSync(path.join(scannerSource,name),path.join(destination,name));
+}
 execFileSync('python3',['-c',`import pathlib,zipfile,os
 root=pathlib.Path(${JSON.stringify(root)})
 folder=root/'public/radio-scanner'
