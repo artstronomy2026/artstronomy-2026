@@ -41,7 +41,7 @@ export function VirtualGallery({ onWebsite, onClose, busy=false, onReady=()=>{} 
   return <section ref={overlay} className={`virtual-gallery ${xr?'virtual-gallery--xr':''}`} aria-label="ARTStronomy virtual exhibition">
     <div ref={host} className="virtual-gallery__scene" />
     <VRControl available={ready&&engine.current?.supportsVR&&!xr} disabled={busy} active={vr} onEnter={()=>engine.current?.startVR()} onExit={()=>engine.current?.endVR()}/>
-    <header className="virtual-gallery__heading"><h2>Orbital Art Museum</h2></header>
+    <header className="virtual-gallery__heading"><h2>Orbital Art Museum <span className="virtual-gallery__beta">Beta</span></h2></header>
     <button className="virtual-gallery__back" onClick={()=>{if(xr)engine.current?.endAR();else onClose();}} aria-label={xr?'Exit walk-in AR':'Back to spaceship'}>{xr?'Exit AR':'Back to ship'}</button>
     <span className="sr-only" role="status">{status}</span>
     <ImmersiveHelp ready={(ready||!!error)&&!busy&&!vr} gallery fallback={xr?'Move your phone or tablet to explore. Open help to visit another creator.':''} motion={xr?'unavailable':motion} onMotion={enable=>enable?engine.current?.startMotion(true):engine.current?.stopMotion()}>
