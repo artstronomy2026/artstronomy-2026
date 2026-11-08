@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#161f30">
   <title>ARTStronomy · AR Camera</title>
-  <link rel="stylesheet" href="poster.css?v=camera-only">
+  <link rel="stylesheet" href="poster.css?v=official-brand">
   <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
 </head>
 <body>
 <main id="intro">
-  <nav><a id="home" href="../" target="_top">ARTSTRONOMY</a><span>AR CAMERA / 2026</span><button id="back-to-ship" class="secondary" hidden>Back to spaceship</button></nav>
+  <nav><a id="home" href="../" target="_top"><img class="ar-wordmark" src="../assets/artstronomy-wordmark.svg" alt="ARTStronomy" width="1318" height="316"></a><span>AR CAMERA / 2026</span><button id="back-to-ship" class="secondary" hidden>Back to spaceship</button></nav>
   <div class="layout">
     <figure class="poster"><img src="poster.png" width="1040" height="1470" alt="Official ARTStronomy poster with Hoshi, a gold wordmark, and five constellations. 18–20 December 2026, 11 AM–8 PM, GMBB Level 5."><figcaption>OFFICIAL ARTSTRONOMY POSTER</figcaption></figure>
     <section class="copy">
       <span class="eyebrow">ARTSTRONOMY 2026</span>
       <h1>See the print<br><em>come to life.</em></h1>
-      <p>Scan the official poster to reveal its five layers, or scan any of the 16 Hoshi stickers to play its animation.</p>
+      <p>Scan the official poster to reveal its five layers, or scan a supported Hoshi sticker to play its animation. There are 25 stickers to collect, including one mystery sticker.</p>
       <ol><li>Start the camera and allow access.</li><li>Fit one printed design in the frame. A second screen works too.</li><li>For the poster, move your phone gently to see the layers at different depths.</li></ol>
       <div class="actions"><button id="start">Start AR camera</button></div>
       <p id="notice" tabindex="-1" role="status" aria-live="polite">Use the back camera on your phone or tablet.</p>
@@ -26,7 +26,7 @@
 </main>
 <section id="experience" hidden aria-label="ARTStronomy AR camera">
   <div id="stage" aria-hidden="true"></div>
-  <header class="hud"><div><strong>ARTSTRONOMY</strong><span>AR CAMERA</span></div><button id="close" class="secondary">Close camera</button></header>
+  <header class="hud"><div><img class="ar-wordmark" src="../assets/artstronomy-wordmark.svg" alt="ARTStronomy" width="1318" height="316"><span>AR CAMERA</span></div><button id="close" class="secondary">Close camera</button></header>
   <div id="scan-frame" aria-hidden="true"></div>
   <div class="status">
     <p id="tracking" role="status" aria-live="polite">Starting camera…</p>
