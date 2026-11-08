@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GifReader } from './omggif.js';
+import { drawPosterEffects, mountPosterPreview, posterPose } from './poster-motion.js?v=1';
 
 const $ = selector => document.querySelector(selector);
 const intro = $('#intro');
@@ -9,6 +10,7 @@ const notice = $('#notice');
 const embedded = window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const startButton = $('#start');
+mountPosterPreview($('.poster'), reducedMotion).catch(error => console.warn('Poster preview:', error));
 const titles = [
   'Idea', 'Spacing', 'Workload', 'Hammer', 'Undo', 'Layers', 'Tablet', 'Design apps',
   'Dab', 'Paint palette', 'Coffee', 'Due o’clock', 'Deadline', 'Click', 'Error 404', 'Pilot',
@@ -129,7 +131,19 @@ async function buildPoster() {
     }
   });
   meshes[0].add(aurora);
-  return { root, meshes, video, aurora, tilt: 0 };
+
+  const effectCanvas = document.createElement('canvas');
+  effectCanvas.width = 512;
+  effectCanvas.height = Math.round(512 * aspect);
+  const effectContext = effectCanvas.getContext('2d');
+  const effectTexture = new THREE.CanvasTexture(effectCanvas);
+  effectTexture.colorSpace = THREE.SRGBColorSpace;
+  const sparkles = plane(effectTexture, 1, aspect, true);
+  sparkles.renderOrder = 11;
+  // Keep the transparent light plane inside the artwork's tracked boundary.
+  sparkles.position.z = .013;
+  root.add(sparkles);
+  return { root, meshes, video, aurora, sparkles, effectContext, lastSparkleFrame: -1, tilt: 0 };
 }
 
 function posterArt() {
@@ -205,6 +219,7 @@ function startEffect() {
   elapsed = 0;
   if (activeTarget.index === 0) {
     effect.tilt = 0;
+    effect.lastSparkleFrame = -1;
     effect.aurora.visible = false;
     effect.video.currentTime = 0;
     if (!reducedMotion.matches) effect.video.play().catch(() => {});
@@ -258,14 +273,23 @@ function animatePoster(delta) {
   const tilt = THREE.MathUtils.smoothstep(angle, .07, .7);
   effect.tilt = THREE.MathUtils.lerp(effect.tilt, tilt, 1 - Math.exp(-8 * delta));
   const motion = !reducedMotion.matches;
-  const phase = elapsed * Math.PI / 3;
+  const pose = posterPose(elapsed);
   const depth = .026 + effect.tilt * .033;
   effect.meshes.forEach((layer, index) => {
-    const bob = motion && index === effect.meshes.length - 1 ? Math.sin(phase) * .012 : 0;
-    layer.position.set(0, bob, index * depth);
+    const isHoshi = motion && index === effect.meshes.length - 1;
+    layer.position.set(isHoshi ? pose.x : 0, isHoshi ? pose.y : 0, index * depth);
+    layer.children[0].rotation.z = isHoshi ? pose.roll : 0;
   });
   const stars = effect.meshes[1].children[0];
-  stars.material.opacity = motion ? .92 + .08 * Math.cos(phase) : 1;
+  stars.material.opacity = motion ? pose.stars : 1;
+
+  effect.sparkles.visible = motion && !!effect.effectContext;
+  const sparkleFrame = Math.floor(elapsed * 30);
+  if (effect.sparkles.visible && sparkleFrame !== effect.lastSparkleFrame) {
+    drawPosterEffects(effect.effectContext, elapsed);
+    effect.sparkles.material.map.needsUpdate = true;
+    effect.lastSparkleFrame = sparkleFrame;
+  }
 
   const { video, aurora } = effect;
   aurora.visible = motion && !video.paused && video.readyState >= 2 && Number.isFinite(video.duration) && video.duration > 0;

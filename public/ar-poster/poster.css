@@ -6,6 +6,10 @@ nav {align-items:center;flex-wrap:wrap} #back-to-ship {padding:10px 16px;font-si
 .ar-wordmark { display:block; width:clamp(104px, 16vw, 154px); height:auto; }
 .hud .ar-wordmark { width:clamp(104px, 14vw, 132px); filter:drop-shadow(0 1px 4px #000); }
 
+.poster-art { position:relative; }
+.poster-art canvas { position:absolute; inset:1px; width:calc(100% - 2px); height:calc(100% - 2px); display:none; }
+.poster.is-animated canvas { display:block; }
+
 #stage canvas,#stage video{pointer-events:none}
 #scan-frame:after{content:'ALIGN POSTER OR STICKER'}
 .effect-controls,#layer-controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
