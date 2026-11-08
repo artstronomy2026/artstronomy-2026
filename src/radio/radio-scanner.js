@@ -7,7 +7,7 @@ export function mountRadioScanner(host) {
   const beacons=makeBeacons(gallerySignals),root=document.createElement('section');
   root.className='radio';root.setAttribute('aria-label','ARTStronomy radio lounge');
   root.innerHTML=`<div class="radio__workspace">
-    <header class="radio__nav"><span class="radio__wordmark">ARTSTRONOMY</span><span class="radio__nav-caption">THE RADIO LOUNGE</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div></div></header>
+    <header class="radio__nav"><span class="radio__wordmark">ARTSTRONOMY</span><span class="radio__nav-caption">Radio Scanner</span><span class="radio__beta">Beta</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div></div></header>
     <section class="radio__hero" aria-label="Featured exhibition artwork">
       <div class="radio__hero-copy"><span class="radio__eyebrow">ARTSTRONOMY GALLERY</span><h2 data-headline></h2><p data-description></p><button type="button" class="radio__explore" data-explore>Find your signal</button></div>
       <figure class="radio__hero-art"><img data-image alt="" decoding="async"></figure>
@@ -15,12 +15,12 @@ export function mountRadioScanner(host) {
     </section>
     <div class="radio__bento">
       <section class="radio__card radio__tuner" aria-label="Signal tuner">
-        <div class="radio__card-head"><h3>Follow the signal.</h3><span data-status>Exploring</span></div>
+        <div class="radio__card-head"><h3>Follow the Signal</h3><span data-status>Exploring</span></div>
         <div class="radio__band"><canvas data-spectrum aria-hidden="true"></canvas><div class="radio__needle" aria-hidden="true"></div></div>
         <label class="radio__dial-label">Slide to explore<input data-frequency-input type="range" min="1200" max="1700" step="1" aria-label="Explore exhibition signals"></label>
         <div class="radio__signal-labels"><span>Drag, tap or use arrow keys</span><span>Hold steady to reveal</span></div>
       </section>
-      <section class="radio__card radio__detection" aria-label="Simulated signal match"><span class="radio__eyebrow">SIGNAL DETECTION</span><strong class="radio__percentage" data-percentage>0%</strong><progress data-progress max="100" value="0" aria-label="Simulated signal match percentage"></progress><span data-match>Searching for a signal</span><small>Simulated signal match</small></section>
+      <section class="radio__card radio__detection" aria-label="Simulated signal match"><h3>Signal Detection</h3><strong class="radio__percentage" data-percentage>0%</strong><progress data-progress max="100" value="0" aria-label="Simulated signal match percentage"></progress><span data-match>Searching for a signal</span><small>Simulated signal match</small></section>
     </div>
 
   </div>`;
@@ -84,8 +84,8 @@ export function mountRadioScanner(host) {
   const observer=new ResizeObserver(resize);Object.values(panels).forEach(p=>observer.observe(p.canvas));
   function draw(t){
     const p=panels.spectrum,{ctx,w,h}=p;
-    if(ctx){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#fffef612';ctx.lineWidth=1;ctx.beginPath();for(let i=1;i<4;i++){ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);}ctx.stroke();
-      for(const [line,color] of [[0,'#56c6b5'],[1,'#ffd400']]){ctx.beginPath();for(let i=0;i<=160;i++){const x=i/160,peak=Math.exp(-Math.pow((x-normalizeFrequency(frequency))/.15,2));const value=.4+Math.sin(x*10+t*.55+line)*.12+Math.sin(x*23-t*.3+line)*.06+peak*(line?.13:.27);const y=h*(1-value);i?ctx.lineTo(x*w,y):ctx.moveTo(0,y);}ctx.strokeStyle=color;ctx.lineWidth=line?1:1.6;ctx.stroke();}}
+    if(ctx){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#29381824';ctx.lineWidth=1;ctx.beginPath();for(let i=1;i<4;i++){ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);}ctx.stroke();
+      for(const [line,color] of [[0,'#204833'],[1,'#62831a']]){ctx.beginPath();for(let i=0;i<=160;i++){const x=i/160,peak=Math.exp(-Math.pow((x-normalizeFrequency(frequency))/.15,2));const value=.4+Math.sin(x*10+t*.55+line)*.12+Math.sin(x*23-t*.3+line)*.06+peak*(line?.13:.27);const y=h*(1-value);i?ctx.lineTo(x*w,y):ctx.moveTo(0,y);}ctx.strokeStyle=color;ctx.lineWidth=line?1:1.6;ctx.stroke();}}
 
   }
   function tick(now){
