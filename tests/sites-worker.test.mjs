@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import test from "node:test";
 import worker from "../worker/index.js";
@@ -61,8 +62,10 @@ test("does not turn missing API or write requests into the app shell", async () 
   }
 });
 
-test("emits the files required by Sites packaging", async () => {
+test("emits the client and worker, with hosting metadata only when supplied", async () => {
   await access(new URL("../dist/client/index.html", import.meta.url));
   await access(new URL("../dist/server/index.js", import.meta.url));
-  await access(new URL("../dist/.openai/hosting.json", import.meta.url));
+  const sourceHosting = new URL("../.openai/hosting.json", import.meta.url);
+  const builtHosting = new URL("../dist/.openai/hosting.json", import.meta.url);
+  assert.equal(existsSync(builtHosting), existsSync(sourceHosting));
 });
