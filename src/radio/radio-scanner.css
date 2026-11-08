@@ -9,11 +9,13 @@
   --radio-gold: var(--gold, #ffd400);
   --radio-readout: color-mix(in srgb, var(--radio-moon) 84%, var(--radio-blue));
   box-sizing: border-box;
-  container-type: inline-size;
+  container-type: size;
+  display: grid;
+  place-items: center;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   padding: clamp(8px, 1.5vw, 22px);
-  background: var(--radio-navy);
+  background: var(--radio-blue);
   color: var(--radio-navy);
   color-scheme: light;
   font: 13px/1.4 Poppins, sans-serif;
@@ -27,12 +29,15 @@
 .radio [hidden] { display: none !important; }
 
 .radio__workspace {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(100%, 1000px);
-  margin-inline: auto;
-  padding: clamp(6px, 1.25cqw, 14px);
-  border: 1px solid var(--radio-moon);
+  height: min(100%, 720px);
+  min-height: 0;
+  padding: clamp(6px, 1.25cqmin, 14px);
+  border: 1px solid #fffef670;
   border-radius: clamp(16px, 3.8cqw, 32px);
-  background: var(--radio-moon);
+  background: var(--radio-blue);
   box-shadow: 0 14px 36px #161f3040;
 }
 
@@ -46,7 +51,7 @@
   font-size: 11px;
 }
 
-.radio__wordmark { font-weight: 750; letter-spacing: -.035em; }
+.radio__wordmark { display: block; width: clamp(84px, 16cqw, 145px); height: auto; }
 .radio__nav-caption { color: var(--radio-navy); }
 .radio__beta { padding: 2px 8px; border-radius: 999px; background: var(--radio-gold); font-weight: 600; }
 .radio__nav-actions { margin-left: auto; }
@@ -67,8 +72,8 @@
 .radio__hero {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
-  min-height: 205px;
-  height: clamp(205px, 49cqw, 485px);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
   overflow: hidden;
   border-radius: clamp(11px, 2.7cqw, 24px);
   background: var(--radio-navy);
@@ -79,18 +84,19 @@
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
-  padding: clamp(14px, 5cqw, 58px) 0 clamp(13px, 4cqw, 38px) clamp(14px, 5cqw, 58px);
+  min-height: 0;
+  padding: clamp(9px, 4cqmin, 36px) 0 clamp(9px, 3cqmin, 28px) clamp(12px, 5cqmin, 52px);
 }
 .radio__eyebrow { color: var(--radio-teal); font-size: clamp(8px, 1.35cqw, 11px); letter-spacing: .13em; }
 .radio__hero h2 {
   margin: .28em 0 .24em;
-  font-size: clamp(23px, 6.4cqw, 68px);
+  font-size: clamp(21px, min(6.4cqw, 11cqh), 68px);
   font-weight: 500;
   letter-spacing: -.065em;
   line-height: 1.02;
   overflow-wrap: anywhere;
 }
-.radio.has-long-title .radio__hero h2 { font-size: clamp(18px, 4.5cqw, 48px); }
+.radio.has-long-title .radio__hero h2 { font-size: clamp(17px, min(4.5cqw, 8cqh), 48px); }
 .radio__hero p { color: var(--radio-moon); font-size: clamp(10px, 1.65cqw, 14px); }
 .radio__explore {
   min-height: 30px;
@@ -105,26 +111,27 @@
 .radio__explore:hover { background: var(--radio-teal); border-color: var(--radio-teal); }
 .radio__hero-art {
   display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   min-width: 0;
   min-height: 0;
-  padding: clamp(8px, 2.2cqw, 24px);
+  padding: clamp(6px, 2.2cqmin, 24px);
 }
 .radio__hero-art img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
 
 .radio__bento {
   display: grid;
   grid-template-columns: minmax(0, 38fr) minmax(0, 62fr);
-  gap: clamp(7px, 1.9cqw, 18px);
-  margin-top: clamp(7px, 1.9cqw, 18px);
+  gap: clamp(7px, 1.9cqmin, 18px);
+  margin-top: clamp(7px, 1.9cqmin, 18px);
 }
 .radio__card {
   min-width: 0;
-  min-height: clamp(154px, 24cqw, 230px);
-  padding: clamp(9px, 2.65cqw, 26px);
+  min-height: clamp(130px, 30cqh, 220px);
+  padding: clamp(8px, 2.65cqmin, 24px);
   border-radius: clamp(11px, 2.7cqw, 24px);
 }
-.radio__card h3 { font-weight: 500; line-height: 1.1; letter-spacing: -.04em; font-size: clamp(14px, 3.2cqw, 33px); }
+.radio__card h3 { font-weight: 500; line-height: 1.1; letter-spacing: -.04em; font-size: clamp(14px, min(3.2cqw, 5.4cqh), 33px); }
 .radio__tuner { display: flex; flex-direction: column; background: var(--radio-teal); }
 .radio__card-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 5px; }
 .radio__card-head > span { padding: 2px 6px; border: 1px solid #161f3055; border-radius: 999px; font-size: clamp(8px, 1.2cqw, 11px); }
@@ -163,4 +170,13 @@
   .radio__detection { grid-template-columns: 1fr; grid-template-rows: auto auto auto 1fr auto; gap: 4px; }
   .radio__percentage { grid-area: auto; font-size: 34px; }
   .radio__detection progress { grid-column: 1; grid-row: 5; }
+}
+
+@container (max-height: 410px) {
+  .radio__nav { min-height: 29px; padding-bottom: 4px; }
+  .radio__wordmark { width: clamp(80px, 16cqw, 108px); }
+  .radio__hero-copy { padding-block: 8px; }
+  .radio__card { min-height: 108px; padding-block: 6px; }
+  .radio__band { min-height: 18px; margin-block: 3px; }
+  .radio__dial-label input { height: 20px; }
 }

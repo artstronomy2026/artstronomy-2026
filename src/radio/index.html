@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#161f30">
+  <meta name="theme-color" content="#3e7bef">
   <title>ARTStronomy — Gallery Radio Scanner</title>
   <!-- CSS: scoped to .radio, safe to embed alongside your existing interface. -->
-  <link rel="stylesheet" href="./radio-scanner.css">
-  <style>html,body{margin:0;width:100%;height:100%;background:#161f30}#camera-viewport{position:relative;width:100%;height:100dvh;min-height:500px}</style>
+  <link rel="stylesheet" href="./radio-scanner.css?v=monitor-fit">
+  <style>html,body{margin:0;width:100%;height:100%;background:#3e7bef}#camera-viewport{position:relative;width:100%;height:100dvh}</style>
 </head>
 <body>
   <!-- HTML: put this container directly inside the exhibition camera section. -->
   <div id="camera-viewport"></div>
   <!-- JavaScript: no npm, framework, CDN, API key, microphone or backend needed. -->
   <script type="module">
-    import { mountRadioScanner } from './radio-scanner.js';
+    import { mountRadioScanner } from './radio-scanner.js?v=monitor-fit';
     const scanner = mountRadioScanner(document.querySelector('#camera-viewport'));
     // In an SPA, call scanner.destroy() when leaving this view.
     window.addEventListener('pagehide', () => scanner.destroy(), {once:true});

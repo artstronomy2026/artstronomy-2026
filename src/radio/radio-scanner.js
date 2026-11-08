@@ -7,7 +7,7 @@ export function mountRadioScanner(host) {
   const beacons=makeBeacons(gallerySignals),root=document.createElement('section');
   root.className='radio';root.setAttribute('aria-label','ARTStronomy radio lounge');
   root.innerHTML=`<div class="radio__workspace">
-    <header class="radio__nav"><span class="radio__wordmark">ARTSTRONOMY</span><span class="radio__nav-caption">Radio Scanner</span><span class="radio__beta">Beta</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div></div></header>
+    <header class="radio__nav"><img class="radio__wordmark" src="/assets/artstronomy-wordmark.svg" alt="ARTStronomy" width="1318" height="316"><span class="radio__nav-caption">Radio Scanner</span><span class="radio__beta">Beta</span><div class="radio__nav-actions"><div class="radio__hand-slot" data-hand-control-slot></div></div></header>
     <section class="radio__hero" aria-label="Featured exhibition artwork">
       <div class="radio__hero-copy"><span class="radio__eyebrow">ARTSTRONOMY GALLERY</span><h2 data-headline></h2><p data-description></p><button type="button" class="radio__explore" data-explore>Find your signal</button></div>
       <figure class="radio__hero-art"><img data-image alt="" decoding="async"></figure>
@@ -70,7 +70,7 @@ export function mountRadioScanner(host) {
   }
 
   listen(input,'input',event=>tune(event.target.value));
-  listen(q('[data-explore]'),'click',()=>{input.focus({preventScroll:true});input.scrollIntoView({block:'nearest',behavior:motion.matches?'instant':'smooth'});});
+  listen(q('[data-explore]'),'click',()=>input.focus({preventScroll:true}));
   const band=q('.radio__band');
   const scrub=e=>{const r=band.getBoundingClientRect();if(r.width)tune(BAND.min+(e.clientX-r.left)/r.width*(BAND.max-BAND.min));};
   listen(band,'pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;pointerId=e.pointerId;band.setPointerCapture(pointerId);scrub(e);});
