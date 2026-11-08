@@ -4,7 +4,6 @@ import {
 } from "./ARExperience.jsx";
 import { creatorData } from "./cosmic/creators.js";
 import { HoverExpand } from "./HoverExpand.jsx";
-import ConstellationGame from "./constellation/ConstellationGame.jsx";
 import { creatorsForOrbit } from "./constellation/game-model.js";
 import {useJourney} from "./journey/useJourney.js";
 import {JourneyOverlay} from "./journey/JourneyOverlay.jsx";
@@ -173,7 +172,6 @@ function CreatorIndex() {
         ))}
       </div>
       <HoverExpand items={creators} selection={creatorSelection} />
-      <ConstellationGame />
     </section>
   );
 }
