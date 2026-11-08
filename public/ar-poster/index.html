@@ -12,12 +12,12 @@
 <main id="intro">
   <nav><a id="home" href="../" target="_top"><img class="ar-wordmark" src="../assets/artstronomy-wordmark.svg" alt="ARTStronomy" width="1318" height="316"></a><span>AR CAMERA / 2026</span><button id="back-to-ship" class="secondary" hidden>Back to spaceship</button></nav>
   <div class="layout">
-    <figure class="poster"><img src="poster.png" width="1040" height="1470" alt="Official ARTStronomy poster with Hoshi, a gold wordmark, and five constellations. 18–20 December 2026, 11 AM–8 PM, GMBB Level 5."><figcaption>OFFICIAL ARTSTRONOMY POSTER</figcaption></figure>
+    <figure class="poster"><img src="poster-v2.webp" width="1100" height="1555" alt="Official ARTStronomy poster with Hoshi, a gold wordmark, and five constellations. Free entrance, 18–20 December 2026, 11 AM–8 PM, GMBB Level 5."><figcaption>OFFICIAL ARTSTRONOMY POSTER</figcaption></figure>
     <section class="copy">
       <span class="eyebrow">ARTSTRONOMY 2026</span>
       <h1>See the print<br><em>come to life.</em></h1>
       <p>Scan the official poster to reveal its five layers, or scan a supported Hoshi sticker to play its animation. There are 25 stickers to collect, including one mystery sticker.</p>
-      <ol><li>Start the camera and allow access.</li><li>Fit one printed design in the frame. A second screen works too.</li><li>For the poster, move your phone gently to see the layers at different depths.</li></ol>
+      <ol><li>Start the camera and allow access.</li><li>Fit one printed design in the frame. A second screen works too.</li><li>Move your phone around the poster to see its five layers. The animation loops while the poster is in view.</li></ol>
       <div class="actions"><button id="start">Start AR camera</button></div>
       <p id="notice" tabindex="-1" role="status" aria-live="polite">Use the back camera on your phone or tablet.</p>
       <footer>18–20 DECEMBER 2026<br>11 AM–8 PM DAILY · GMBB LEVEL 5</footer>
@@ -31,15 +31,8 @@
   <div class="status">
     <p id="tracking" role="status" aria-live="polite">Starting camera…</p>
     <p id="hint"></p>
-    <div class="effect-controls">
-      <div id="layer-controls" hidden>
-        <button id="prev-layer" class="secondary" aria-label="Previous poster layer">←</button>
-        <span id="layer-label" role="status"></span>
-        <button id="next-layer" class="secondary" aria-label="Next poster layer">→</button>
-      </div>
-    </div>
   </div>
 </section>
-<script type="module" src="poster.js?v=sticker-loop"></script>
+<script type="module" src="poster.js?v=poster-v2"></script>
 </body>
 </html>

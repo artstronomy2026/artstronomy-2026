@@ -1,0 +1,55 @@
+{
+  "aspect": 1.4136125654450262,
+  "layers": [
+    {
+      "name": "Galaxy backdrop",
+      "image": "poster-v2-layer-1.webp",
+      "bounds": [
+        0.0,
+        0.0,
+        1.0,
+        1.4136126
+      ]
+    },
+    {
+      "name": "Stars and constellations",
+      "image": "poster-v2-layer-2.webp",
+      "bounds": [
+        0.0188482,
+        0.0335079,
+        0.9486911,
+        1.3256545
+      ]
+    },
+    {
+      "name": "ARTStronomy title",
+      "image": "poster-v2-layer-3.webp",
+      "bounds": [
+        0.1549738,
+        0.0931937,
+        0.6910995,
+        0.4450262
+      ]
+    },
+    {
+      "name": "Exhibition details",
+      "image": "poster-v2-layer-4.webp",
+      "bounds": [
+        0.0303665,
+        0.0335079,
+        0.9329843,
+        1.3486911
+      ]
+    },
+    {
+      "name": "Hoshi",
+      "image": "poster-v2-layer-5.webp",
+      "bounds": [
+        0.1465969,
+        0.5005236,
+        0.704712,
+        0.5937173
+      ]
+    }
+  ]
+}

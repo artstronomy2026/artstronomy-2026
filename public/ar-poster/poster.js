@@ -6,7 +6,6 @@ const intro = $('#intro');
 const experience = $('#experience');
 const stage = $('#stage');
 const notice = $('#notice');
-const controls = $('#layer-controls');
 const embedded = window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const startButton = $('#start');
@@ -17,10 +16,11 @@ const titles = [
 const stickerName = index => `Hoshi Sticker-${String(index).padStart(2, '0')}`;
 
 const loader = new THREE.TextureLoader();
+const viewer = new THREE.Vector3();
 let mind, renderer, scene, camera, trackerReady;
 let activeTarget, effect, requested = 0, returning = false;
 let posterPromise, stickerSurface;
-let elapsed = 0, lastTime = 0, shownLayers = 0, manualLayers = false;
+let elapsed = 0, lastTime = 0;
 
 function status(text, hint = '') {
   $('#tracking').textContent = text;
@@ -30,6 +30,7 @@ function status(text, hint = '') {
 function cleanup() {
   returning = true;
   requested++;
+  effect?.video?.pause();
   renderer?.setAnimationLoop(null);
   mind?.controller?.stopProcessVideo();
   mind?.controller?.worker?.terminate();
@@ -91,7 +92,7 @@ function plane(texture, width, height, transparent) {
 }
 
 async function buildPoster() {
-  const { aspect, layers } = await (await fetchAsset('poster-layers.json')).json();
+  const { aspect, layers } = await (await fetchAsset('poster-v2-layers.json')).json();
   const root = new THREE.Group();
   const meshes = await Promise.all(layers.map(async ({ image, bounds }, index) => {
     const texture = await loader.loadAsync(image);
@@ -99,13 +100,36 @@ async function buildPoster() {
     const [left, top, width, height] = bounds;
     const mesh = plane(texture, width, height, index !== 0);
     mesh.position.set(left + width / 2 - .5, aspect / 2 - top - height / 2, 0);
-    mesh.renderOrder = index + 1;
+    mesh.renderOrder = index * 2;
     const layer = new THREE.Group();
     layer.add(mesh);
-    root.add(layer);
     return layer;
   }));
-  return { root, meshes, layers, reveal: layers.map(() => 0) };
+  root.add(...meshes);
+  const video = document.createElement('video');
+  video.src = 'poster-v2-aurora.mp4';
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'none';
+  const videoTexture = new THREE.VideoTexture(video);
+  videoTexture.colorSpace = THREE.SRGBColorSpace;
+  const aurora = plane(videoTexture, 1, aspect, true);
+  aurora.renderOrder = 1;
+  aurora.position.z = .001;
+  aurora.material.opacity = 0;
+  aurora.visible = false;
+  video.addEventListener('loadedmetadata', () => {
+    const ratio = video.videoWidth / video.videoHeight;
+    if (ratio > 0) {
+      const y = Math.min(1, aspect * ratio);
+      const x = Math.min(1, 1 / (aspect * ratio));
+      videoTexture.repeat.set(x, y);
+      videoTexture.offset.set((1 - x) / 2, (1 - y) / 2);
+    }
+  });
+  meshes[0].add(aurora);
+  return { root, meshes, video, aurora, tilt: 0 };
 }
 
 function posterArt() {
@@ -177,40 +201,24 @@ function drawSticker(sticker, milliseconds) {
   sticker.frame = target;
 }
 
-function setLayer(step) {
-  if (step === shownLayers) return;
-  shownLayers = step;
-  const total = effect.layers.length;
-  $('#layer-label').textContent = `${step} / ${total} · ${effect.layers[step - 1].name}`;
-  $('#prev-layer').disabled = step <= 1;
-  $('#next-layer').disabled = step >= total;
-}
-
 function startEffect() {
   elapsed = 0;
   if (activeTarget.index === 0) {
-    shownLayers = 0;
-    effect.reveal.fill(0);
-    manualLayers = reducedMotion.matches;
-    setLayer(1);
+    effect.tilt = 0;
+    effect.aurora.visible = false;
+    effect.video.currentTime = 0;
+    if (!reducedMotion.matches) effect.video.play().catch(() => {});
   } else {
     drawSticker(effect, reducedMotion.matches ? Infinity : 0);
   }
 }
 
-for (const [id, delta] of [['#prev-layer', -1], ['#next-layer', 1]]) {
-  $(id).onclick = () => {
-    manualLayers = true;
-    setLayer(shownLayers + delta);
-  };
-}
-
 function clearEffect() {
   requested++;
+  effect?.video?.pause();
   if (effect) effect.root.removeFromParent();
   effect = null;
   activeTarget = null;
-  controls.hidden = true;
   experience.classList.remove('is-found');
 }
 
@@ -230,8 +238,7 @@ async function activate(index, parent) {
     effect.root.rotation.set(0, 0, 0);
     effect.root.scale.setScalar(1);
     parent.add(effect.root);
-    controls.hidden = index !== 0;
-    status(label, index === 0 ? 'Use the arrows to explore the poster one layer at a time.' : '');
+    status(label, index === 0 ? 'Move around the poster to see the five layers at different depths.' : '');
     startEffect();
   } catch (error) {
     if (requested !== request || returning) return;
@@ -244,6 +251,30 @@ function scanPrompt() {
   status('Find the poster or a Hoshi sticker', 'Keep one design in view. Use even light and avoid glare.');
 }
 
+function animatePoster(delta) {
+  camera.getWorldPosition(viewer);
+  effect.root.worldToLocal(viewer);
+  const angle = Math.atan2(Math.hypot(viewer.x, viewer.y), Math.abs(viewer.z));
+  const tilt = THREE.MathUtils.smoothstep(angle, .07, .7);
+  effect.tilt = THREE.MathUtils.lerp(effect.tilt, tilt, 1 - Math.exp(-8 * delta));
+  const motion = !reducedMotion.matches;
+  const phase = elapsed * Math.PI / 3;
+  const depth = .026 + effect.tilt * .033;
+  effect.meshes.forEach((layer, index) => {
+    const bob = motion && index === effect.meshes.length - 1 ? Math.sin(phase) * .012 : 0;
+    layer.position.set(0, bob, index * depth);
+  });
+  const stars = effect.meshes[1].children[0];
+  stars.material.opacity = motion ? .92 + .08 * Math.cos(phase) : 1;
+
+  const { video, aurora } = effect;
+  aurora.visible = motion && !video.paused && video.readyState >= 2 && Number.isFinite(video.duration) && video.duration > 0;
+  if (aurora.visible) {
+    // Fade back to the original illustration at both ends of the video loop.
+    aurora.material.opacity = .42 * Math.sin(Math.PI * video.currentTime / video.duration) ** 2;
+  }
+}
+
 function render(now) {
   const delta = lastTime ? Math.min(.1, (now - lastTime) / 1000) : 0;
   lastTime = now;
@@ -251,17 +282,7 @@ function render(now) {
   if (effect) {
     elapsed += delta;
     if (activeTarget.index === 0) {
-      if (!manualLayers) setLayer(Math.min(effect.layers.length, 1 + Math.floor(elapsed / 1.05)));
-      effect.meshes.forEach((layer, index) => {
-        const visible = index < shownLayers;
-        const target = visible ? 1 : 0;
-        const blend = reducedMotion.matches || index === 0 ? 1 : Math.min(delta * 8, 1);
-        const amount = effect.reveal[index] = THREE.MathUtils.lerp(effect.reveal[index], target, blend);
-        layer.visible = visible || amount > .01;
-        layer.position.set((index % 2 ? -.018 : .023) * index * amount,
-          .014 * index * amount, .017 + index * .042 * amount);
-        layer.children[0].material.opacity = index === 0 ? 1 : amount;
-      });
+      animatePoster(delta);
     } else if (!reducedMotion.matches) {
       drawSticker(effect, (elapsed * 1000) % effect.duration);
     }
@@ -298,7 +319,7 @@ async function startAR() {
     showCamera();
     status('Allow camera access to scan the artwork');
     mind = new MindARThree({
-      container:stage, imageTargetSrc:'targets.mind', maxTrack:1, uiLoading:'no',
+      container:stage, imageTargetSrc:'targets-v2.mind', maxTrack:1, uiLoading:'no',
       uiScanning:'no', uiError:'no', warmupTolerance:3, missTolerance:6,
       filterMinCF:.001, filterBeta:1000,
     });
@@ -329,6 +350,11 @@ startButton.onclick = startAR;
 document.addEventListener('visibilitychange', () => {
   lastTime = 0;
   if (!trackerReady || returning) return;
-  if (document.hidden) mind.controller.stopProcessVideo();
-  else mind.controller.processVideo(mind.video);
+  if (document.hidden) {
+    effect?.video?.pause();
+    mind.controller.stopProcessVideo();
+  } else {
+    if (!reducedMotion.matches) effect?.video?.play().catch(() => {});
+    mind.controller.processVideo(mind.video);
+  }
 });
