@@ -1,17 +1,20 @@
 @import url('/fonts/poppins.css');
 
 .radio {
-  --radio-ink: #24242a;
-  --radio-paper: #f6f6f5;
-  --radio-lime: #baf341;
-  --radio-mist: #d9dae3;
+  /* Keep fallbacks in sync with the site palette for the standalone scanner. */
+  --radio-navy: var(--navy, #161f30);
+  --radio-moon: var(--moon, #fffef6);
+  --radio-blue: var(--blue, #3e7bef);
+  --radio-teal: var(--teal, #56c6b5);
+  --radio-gold: var(--gold, #ffd400);
+  --radio-readout: color-mix(in srgb, var(--radio-moon) 84%, var(--radio-blue));
   box-sizing: border-box;
   container-type: inline-size;
   height: 100%;
   overflow: auto;
   padding: clamp(8px, 1.5vw, 22px);
-  background: #767980;
-  color: var(--radio-ink);
+  background: var(--radio-navy);
+  color: var(--radio-navy);
   color-scheme: light;
   font: 13px/1.4 Poppins, sans-serif;
 }
@@ -27,10 +30,10 @@
   width: min(100%, 1000px);
   margin-inline: auto;
   padding: clamp(6px, 1.25cqw, 14px);
-  border: 1px solid #fff;
+  border: 1px solid var(--radio-moon);
   border-radius: clamp(16px, 3.8cqw, 32px);
-  background: var(--radio-paper);
-  box-shadow: 0 14px 36px #20212740;
+  background: var(--radio-moon);
+  box-shadow: 0 14px 36px #161f3040;
 }
 
 .radio__nav {
@@ -44,20 +47,20 @@
 }
 
 .radio__wordmark { font-weight: 750; letter-spacing: -.035em; }
-.radio__nav-caption { color: #4d4e56; }
-.radio__beta { padding: 2px 8px; border-radius: 999px; background: #e2e3e6; font-weight: 600; }
+.radio__nav-caption { color: var(--radio-navy); }
+.radio__beta { padding: 2px 8px; border-radius: 999px; background: var(--radio-gold); font-weight: 600; }
 .radio__nav-actions { margin-left: auto; }
 .radio__hand-slot:empty { display: none; }
 .radio__hand-slot button {
-  border: 1px solid #36363c;
+  border: 1px solid var(--radio-navy);
   border-radius: 999px;
-  background: var(--radio-ink);
-  color: #fff;
+  background: var(--radio-navy);
+  color: var(--radio-moon);
   padding: 5px 10px;
   font-size: 10px;
   min-height: 28px;
 }
-.radio__hand-slot button[aria-pressed=true] { background: var(--radio-lime); color: var(--radio-ink); }
+.radio__hand-slot button[aria-pressed=true] { background: var(--radio-teal); color: var(--radio-navy); }
 .radio__hand-slot button:disabled { opacity: .65; cursor: wait; }
 .radio__hand-slot [role=status] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
@@ -68,8 +71,8 @@
   height: clamp(205px, 49cqw, 485px);
   overflow: hidden;
   border-radius: clamp(11px, 2.7cqw, 24px);
-  background: #242424;
-  color: #f7f7f5;
+  background: var(--radio-navy);
+  color: var(--radio-moon);
 }
 .radio__hero-copy {
   display: flex;
@@ -78,7 +81,7 @@
   min-width: 0;
   padding: clamp(14px, 5cqw, 58px) 0 clamp(13px, 4cqw, 38px) clamp(14px, 5cqw, 58px);
 }
-.radio__eyebrow { color: #c7c7c8; font-size: clamp(8px, 1.35cqw, 11px); letter-spacing: .13em; }
+.radio__eyebrow { color: var(--radio-teal); font-size: clamp(8px, 1.35cqw, 11px); letter-spacing: .13em; }
 .radio__hero h2 {
   margin: .28em 0 .24em;
   font-size: clamp(23px, 6.4cqw, 68px);
@@ -88,18 +91,18 @@
   overflow-wrap: anywhere;
 }
 .radio.has-long-title .radio__hero h2 { font-size: clamp(18px, 4.5cqw, 48px); }
-.radio__hero p { color: #d0d0d0; font-size: clamp(10px, 1.65cqw, 14px); }
+.radio__hero p { color: var(--radio-moon); font-size: clamp(10px, 1.65cqw, 14px); }
 .radio__explore {
   min-height: 30px;
   margin-top: auto;
   padding: 5px 12px;
-  border: 1px solid #f7f7f5;
+  border: 1px solid var(--radio-gold);
   border-radius: 999px;
-  background: #f7f7f5;
-  color: var(--radio-ink);
+  background: var(--radio-gold);
+  color: var(--radio-navy);
   font-size: clamp(9px, 1.45cqw, 12px) !important;
 }
-.radio__explore:hover { background: var(--radio-lime); border-color: var(--radio-lime); }
+.radio__explore:hover { background: var(--radio-teal); border-color: var(--radio-teal); }
 .radio__hero-art {
   display: grid;
   place-items: center;
@@ -122,14 +125,14 @@
   border-radius: clamp(11px, 2.7cqw, 24px);
 }
 .radio__card h3 { font-weight: 500; line-height: 1.1; letter-spacing: -.04em; font-size: clamp(14px, 3.2cqw, 33px); }
-.radio__tuner { display: flex; flex-direction: column; background: var(--radio-lime); }
+.radio__tuner { display: flex; flex-direction: column; background: var(--radio-teal); }
 .radio__card-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 5px; }
-.radio__card-head > span { padding: 2px 6px; border: 1px solid #24242a55; border-radius: 999px; font-size: clamp(8px, 1.2cqw, 11px); }
+.radio__card-head > span { padding: 2px 6px; border: 1px solid #161f3055; border-radius: 999px; font-size: clamp(8px, 1.2cqw, 11px); }
 .radio__band { position: relative; flex: 1; min-height: 26px; margin-block: 5px; cursor: ew-resize; touch-action: pan-y; }
 .radio__band canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-.radio__needle { position: absolute; inset: 0 auto 0 0; width: 1px; background: #29381885; pointer-events: none; }
+.radio__needle { position: absolute; inset: 0 auto 0 0; width: 1px; background: #161f3085; pointer-events: none; }
 .radio__dial-label { display: block; font-size: clamp(8px, 1.2cqw, 11px); }
-.radio__dial-label input { display: block; width: 100%; height: 23px; margin: 0; accent-color: #294525; cursor: ew-resize; }
+.radio__dial-label input { display: block; width: 100%; height: 23px; margin: 0; accent-color: var(--radio-navy); cursor: ew-resize; }
 .radio__signal-labels { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 7px; font-size: clamp(7px, 1.02cqw, 10px); }
 
 .radio__detection {
@@ -138,7 +141,7 @@
   grid-template-rows: auto auto 1fr auto;
   align-items: start;
   gap: 5px 12px;
-  background: var(--radio-mist);
+  background: var(--radio-readout);
 }
 .radio__percentage {
   grid-column: 2;
@@ -150,9 +153,9 @@
   letter-spacing: -.075em;
   font-variant-numeric: tabular-nums;
 }
-.radio__detection progress { grid-column: 1 / -1; grid-row: 4; width: 100%; height: 7px; accent-color: var(--radio-ink); }
+.radio__detection progress { grid-column: 1 / -1; grid-row: 4; width: 100%; height: 7px; accent-color: var(--radio-navy); }
 .radio__detection [data-match] { grid-column: 1; font-size: clamp(9px, 1.6cqw, 14px); }
-.radio__detection small { grid-column: 1; color: #50515a; font-size: clamp(8px, 1.15cqw, 11px); }
+.radio__detection small { grid-column: 1; color: var(--radio-navy); font-size: clamp(8px, 1.15cqw, 11px); }
 
 @container (max-width: 420px) {
   .radio__hero-copy { padding-right: 4px; }

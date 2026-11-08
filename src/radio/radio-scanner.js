@@ -84,8 +84,8 @@ export function mountRadioScanner(host) {
   const observer=new ResizeObserver(resize);Object.values(panels).forEach(p=>observer.observe(p.canvas));
   function draw(t){
     const p=panels.spectrum,{ctx,w,h}=p;
-    if(ctx){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#29381824';ctx.lineWidth=1;ctx.beginPath();for(let i=1;i<4;i++){ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);}ctx.stroke();
-      for(const [line,color] of [[0,'#204833'],[1,'#62831a']]){ctx.beginPath();for(let i=0;i<=160;i++){const x=i/160,peak=Math.exp(-Math.pow((x-normalizeFrequency(frequency))/.15,2));const value=.4+Math.sin(x*10+t*.55+line)*.12+Math.sin(x*23-t*.3+line)*.06+peak*(line?.13:.27);const y=h*(1-value);i?ctx.lineTo(x*w,y):ctx.moveTo(0,y);}ctx.strokeStyle=color;ctx.lineWidth=line?1:1.6;ctx.stroke();}}
+    if(ctx){ctx.clearRect(0,0,w,h);ctx.strokeStyle='#161f3024';ctx.lineWidth=1;ctx.beginPath();for(let i=1;i<4;i++){ctx.moveTo(0,h*i/4);ctx.lineTo(w,h*i/4);}ctx.stroke();
+      for(const [line,color] of [[0,'#161f30'],[1,'#161f3099']]){ctx.beginPath();for(let i=0;i<=160;i++){const x=i/160,peak=Math.exp(-Math.pow((x-normalizeFrequency(frequency))/.15,2));const value=.4+Math.sin(x*10+t*.55+line)*.12+Math.sin(x*23-t*.3+line)*.06+peak*(line?.13:.27);const y=h*(1-value);i?ctx.lineTo(x*w,y):ctx.moveTo(0,y);}ctx.strokeStyle=color;ctx.lineWidth=line?1:1.6;ctx.stroke();}}
 
   }
   function tick(now){
